@@ -1,0 +1,27 @@
+:root {
+  --color-bg: #0e0e0c;
+  --color-fg: #f4f1ea;
+  --color-accent: #c9a04a;
+  --font-body: system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
+
+#app {
+  min-height: 100vh;
+}
