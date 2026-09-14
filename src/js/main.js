@@ -305,10 +305,12 @@ function addHero(tl, reduceMotion) {
     attr: { transform: () => transformFor(MARK_BBOX, toPx(K0)) },
   });
 
+  // Mark starts white/solid (opacity 1), only wordmark fades in then out
+  gsap.set(mark, { opacity: 1 });
   gsap.fromTo(
-    [mark, wordmark],
-    { y: -60, opacity: 0 },
-    { y: 0, opacity: 1, duration: 1.1, ease: 'power2.out', stagger: 0.08 }
+    wordmark,
+    { opacity: 0 },
+    { opacity: 1, duration: 1.1, ease: 'power2.out' }
   );
 
   /* --- K0 -> K1: 0 -> 0.5 — wordmark fades + drops; mark recentres and
