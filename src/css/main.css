@@ -121,8 +121,6 @@ html.lenis body {
   opacity: 0;
   -webkit-mask-image: url(#heroMarkMask);
   mask-image: url(#heroMarkMask);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
   will-change: opacity;
 }
 
