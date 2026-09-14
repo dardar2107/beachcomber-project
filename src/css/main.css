@@ -1,11 +1,38 @@
 :root {
-  --color-bg: #0e0e0c;
-  --color-fg: #f4f1ea;
-  --color-accent: #c9a04a;
-  --font-body: system-ui, sans-serif;
+  /* Brand */
+  --navy: #002e4e;
+  --cream: #f4f2ea;
+  --ink: #333;
+  --gold: #bda15e;
+  --cream-deep: #e5e0cd;
+  --stone: #b0c2c4; /* Stage 1 Phases 1-3 backdrop */
+
+  /*
+   * One 1920-canvas unit. The pinned scene is laid out in vw, so on a
+   * viewport shorter than the 1055px design height everything overflowed
+   * and collided. Taking the smaller of the width- and height-derived
+   * value scales the whole scene down together instead — identical to 1vw
+   * at or above the design aspect ratio, so nothing moves on a tall screen.
+   */
+  --u: min(1vw, 1.8199vh);
+  --sky: #a2c5ce;
+  --sky-dark: #6ba2b4;
+  --sky-deep: #6f9aa6;
+  --snow: #fffafa;
+
+  /* Type — sized against a 1920px design canvas: vw = (px / 1920) * 100 */
+  --fs-headline: clamp(28px, 6.7708vw, 130px); /* 130px @ 1920 */
+  --fs-body: clamp(12px, 0.8333vw, 16px); /* 16px @ 1920 */
+  --fs-ui: clamp(11px, 0.78125vw, 15px); /* 15px @ 1920 */
+
+  --font-serif: Didot, 'Big Caslon', Georgia, serif;
+  --font-sans: 'Montserrat', sans-serif;
+
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -16,12 +43,2153 @@ html {
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font-family: var(--font-body);
-  min-height: 100vh;
+  background: var(--navy);
+  color: var(--cream);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-#app {
-  min-height: 100vh;
+img,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- Hero -- */
+/*
+ * DESIGN CANVAS: 1920x921 (confirmed from Figma frames 1-1 through 1-5,
+ * node ids 977:237, 980:436, 998:849, 980:511, 931:4633). Every top/left/
+ * width/height figure below is measured directly from those frames — see
+ * the comments on each rule — used as literal CSS %, relative to .hero's
+ * real rendered box.
+ */
+
+.hero {
+  /* Type still scales with the pinned scene, not raw viewport width. */
+  --fs-headline: clamp(22px, calc(5.2083 * var(--u)), 100px); /* 100px @ 1920 */
+  --fs-body: clamp(14px, calc(0.9375 * var(--u)), 18px); /* 18px @ 1920 */
+  --fs-ui: clamp(11px, calc(0.78125 * var(--u)), 15px);
+
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: var(--navy);
+}
+
+/* Hidden sprite: see the comment on the markup itself. */
+.hero__defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Phases 1-3 solid backdrop; fades to transparent (for good) once the video
+   reveal completes. */
+.hero__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--stone);
+  will-change: opacity;
+}
+
+/*
+ * Masked video, above .hero__bg, below the solid mark. Once its growth
+ * completes and the mask exceeds the viewport, this layer is frozen and
+ * becomes the permanent hero backdrop — confirmed by frame 1-5, where the
+ * video sits behind nav/content with navy only as the surrounding fallback.
+ */
+.hero__video-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  -webkit-mask-image: url(#heroMarkMask);
+  mask-image: url(#heroMarkMask);
+  will-change: opacity;
+}
+
+.hero__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --- Nautilus / B mark --- */
+/*
+ * The one persistent element for the whole sequence. No viewBox on this
+ * <svg> — its internal user-space is deliberately left equal to raw CSS px
+ * of its own (viewport-filling) box, matching the mask's own
+ * maskContentUnits="userSpaceOnUse" space exactly, so the same computed
+ * transform string drives both without any unit conversion. The outer
+ * element's own CSS transform (translateY + opacity) is reserved for the
+ * one-off load-in slide, kept separate from the inner <g>'s scroll-scrubbed
+ * attr transform so the two never fight.
+ */
+.hero__mark {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: visible;
+  will-change: transform, opacity;
+}
+
+.hero__mark path {
+  fill: #fff; /* logo-fullwhite.svg — matches the paths' own baked-in fill */
+}
+
+/* --- Wordmark --- */
+/* Only ever visible at rest; fades out (and drops, per frame 1-2) early on
+   and never returns. */
+.hero__wordmark {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: visible;
+  will-change: transform, opacity;
+}
+
+/* --- Nav --- */
+/* Rest position measured from frame 1-5: menu at 120,76.5px; search/lang
+   inset 120px from the right, at 74.5px — i.e. 6.25% horizontal padding,
+   ~0 vertical (both already sit almost exactly on the row's own top). */
+
+.hero__nav {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 calc(6.25 * var(--u)); /* 120px @ 1920 */
+  opacity: 0;
+  will-change: top, opacity, filter;
+}
+
+.hero__nav-side {
+  display: flex;
+  align-items: center;
+  gap: calc(1.5625 * var(--u)); /* 30px @ 1920 */
+}
+
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75em;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: var(--cream);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-ui);
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nav-btn--icon {
+  gap: 0;
+}
+
+.nav-lang .icon--chevron {
+  width: 0.8em;
+}
+
+.icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+  height: auto;
+}
+
+.icon--menu {
+  width: 1.6em;
+}
+
+.icon--search {
+  width: 1.35em;
+}
+
+/* --- Content --- */
+/* Rest position measured from frame 1-5's content group: left 116px,
+   effective top 423.31px (508.31px container - 85px inner offset). */
+
+.hero__content {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  z-index: 25;
+  padding: 0 calc(6.0417 * var(--u)); /* 116px @ 1920 */
+  opacity: 0;
+  will-change: top, opacity, filter;
+}
+
+.hero__headline {
+  font-family: var(--font-sans);
+  font-weight: 600; /* SemiBold, per the design and your correction */
+  font-style: normal;
+  font-size: var(--fs-headline);
+  line-height: 1.1; /* 110px @ 100px, per frame 1-5 */
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  margin-bottom: 0.65em; /* 65px @ 100px, per frame 1-5 */
+}
+
+/* Body + CTAs share one row, inset 160px from the headline's left edge. */
+.hero__lower {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(6.25 * var(--u)); /* 120px @ 1920, per frame 1-5 */
+  padding-left: calc(8.3333 * var(--u)); /* 160px @ 1920 */
+}
+
+.hero__body {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-body);
+  line-height: 1.44; /* 26px @ 18px, per frame 1-5 */
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  max-width: 23.6em;
+  margin-bottom: 0;
+}
+
+.hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4em; /* 60px @ 1920 */
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9em;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-ui);
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  will-change: transform, opacity, filter;
+}
+
+.cta--solid {
+  background: var(--cream);
+  color: var(--navy);
+  padding: 1.35em 2.4em;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.cta--solid:hover {
+  background: #ffffff;
+}
+
+.cta--link {
+  color: var(--cream);
+  padding: 1.35em 0;
+  border-bottom: 1px solid currentColor;
+}
+
+.cta--link .icon--arrow {
+  width: 1.5em;
+  transition: transform 0.3s ease;
+}
+
+.cta--link:hover .icon--arrow {
+  transform: translateX(0.25em);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__bg {
+    opacity: 0;
+  }
+
+  .hero__video-wrap {
+    opacity: 1;
+  }
+
+  .hero__wordmark {
+    opacity: 0;
+  }
+
+  .hero__nav,
+  .hero__content {
+    opacity: 1;
+  }
+}
+
+/* ----------------------------------- Stage 2 — "2026 in figures" overlay -- */
+
+/*
+ * Lives inside the pinned hero and stacks on top of it, so the cream wipes
+ * directly over the hero itself. Nothing slides up from below the fold.
+ * Geometry follows the 1920x1055 Figma frame: vw = (design px / 1920) * 100.
+ */
+.figures {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* Wipes in from the left, over the hero. */
+.figures__cream {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--cream);
+  clip-path: inset(0% 100% 0% 0%);
+  will-change: clip-path;
+}
+
+/* Right half carries the photo, sitting above the cream. */
+.figures__media {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  z-index: 2;
+  opacity: 0;
+  overflow: hidden;
+  will-change: opacity, filter;
+}
+
+/* One full-height panel per stat, stacked — swipes up on each figure change. */
+.figures__phototrack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+.figures__photo {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-size: cover;
+  background-position: center;
+}
+
+.figures__photo:nth-child(1) {
+  top: 0;
+}
+
+.figures__photo:nth-child(2) {
+  top: 100%;
+}
+
+.figures__photo:nth-child(3) {
+  top: 200%;
+}
+
+.figures__photo--a {
+  background-image: url('/assets/totalassets_img.jpg');
+}
+
+.figures__photo--b {
+  background-image: url('/assets/profit-after-tax_img.jpg');
+}
+
+/*
+ * The B is a cream glyph painted over the photo (not a mask). The wrapper is
+ * viewport-sized so its clip-path wipes in from the right edge of the screen,
+ * not from the edge of the oversized glyph — the B reads as being drawn on.
+ */
+.figures__bwrap {
+  position: absolute;
+  inset: 0;
+  z-index: 7; /* above the Stage 3/4 backgrounds, below the Stage 4 tablet */
+  clip-path: inset(0% 0% 0% 100%);
+  will-change: clip-path;
+}
+
+/*
+ * Masked rather than an <img> so the fill is tweenable — Stage 3 recolours it
+ * from cream to a tint of the achievements background.
+ */
+.figures__b {
+  position: absolute;
+  left: calc(-137.8646 * var(--u)); /* -2647px @ 1920 */
+  top: calc(-246.9271 * var(--u)); /* -4741px @ 1920 */
+  width: calc(388.5417 * var(--u)); /* 7460px @ 1920 */
+  height: calc(461.1458 * var(--u)); /* 8854px @ 1920 */
+  background-color: var(--cream);
+  -webkit-mask-image: url('/assets/B.svg');
+  mask-image: url('/assets/B.svg');
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  will-change: transform, opacity, background-color;
+}
+
+/*
+ * Stage 3 watermark. Box is sized so the nautilus's own B glyph lands on the
+ * design rect (112,150 -> 637,900 @ 1920x1055); Stage 3 starts it scaled up so
+ * that glyph sits exactly on top of the B.svg one, and the two crossfade.
+ */
+.figures__nautilus {
+  position: absolute;
+  left: calc(-55.2083 * var(--u)); /* -1060px @ 1920 */
+  top: calc(-81.6146 * var(--u)); /* -1567px @ 1920 */
+  width: calc(154.4271 * var(--u)); /* 2965px @ 1920 */
+  height: calc(183.2813 * var(--u)); /* 3519px @ 1920 */
+  background-color: #fff;
+  opacity: 0;
+  -webkit-mask-image: url('/assets/b-nautilus.svg');
+  mask-image: url('/assets/b-nautilus.svg');
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  will-change: transform, opacity;
+}
+
+/* --- Left panel --- */
+
+.figures__panel {
+  position: absolute;
+  left: calc(6.1979 * var(--u)); /* 119px @ 1920 */
+  top: calc(10 * var(--u)); /* 192px @ 1920 */
+  width: calc(36.1458 * var(--u)); /* 694px @ 1920 */
+  z-index: 99;
+  color: var(--ink);
+  opacity: 0;
+  pointer-events: auto;
+  will-change: transform, opacity, filter;
+}
+
+.figures__title {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(28px, calc(3.125 * var(--u)), 60px); /* 60px @ 1920 */
+  line-height: 1.1667;
+  letter-spacing: -0.03em;
+}
+
+.figures__intro {
+  margin-top: 0.5em;
+  max-width: calc(22.9167 * var(--u)); /* 440px @ 1920 */
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+}
+
+/* Figures carousel — a clipped window the track slides through. */
+.figures__window {
+  margin-top: calc(4.4792 * var(--u)); /* puts the window top at 212px @ 1920 */
+  height: calc(12.9167 * var(--u)); /* 248px @ 1920 */
+  overflow: hidden;
+}
+
+.figures__track {
+  will-change: transform;
+}
+
+.figure {
+  height: calc(15.2604 * var(--u)); /* 293px @ 1920 — one carousel step */
+}
+
+.figure__label {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--fs-body);
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.figure__value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.09em;
+  margin-top: 0.3173em; /* figure line box lands at 89px @ 1920 */
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(64px, calc(11.4583 * var(--u)), 220px); /* 220px @ 1920 */
+  line-height: 0.4673; /* 102.806px against 220px */
+  letter-spacing: -0.05em;
+  color: var(--gold);
+}
+
+.figure__unit {
+  font-weight: 700;
+  font-size: 0.1294em; /* 28.469px against the 220px figure */
+  line-height: 1.3333;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* --- Bottom row: static through the cycling --- */
+
+.figures__actions {
+  display: flex;
+  align-items: center;
+  gap: calc(2.9167 * var(--u)); /* 56px @ 1920 */
+  margin-top: calc(4.6354 * var(--u)); /* puts the row top at 549px @ 1920 */
+  margin-bottom: calc(5 * var(--u)); /* 96px @ 1920 */
+}
+
+.btn-dark {
+  display: inline-flex;
+  align-items: center;
+  gap: 2em;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1.3333em 2em; /* 20px / 30px against 15px */
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-ui);
+  line-height: 1.0667; /* trims to a 56px row @ 1920 */
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
+}
+
+.btn-dark:hover {
+  background: #1f1f1f;
+}
+
+.icon--external {
+  width: 1.0667em;
+  stroke-width: 1.4;
+}
+
+.figures__divider {
+  width: 1px;
+  height: calc(2.7083 * var(--u)); /* 52px @ 1920 */
+  background: rgba(51, 51, 51, 0.35);
+}
+
+.shareprice__label {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--fs-body);
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.shareprice__label span {
+  font-weight: 500;
+  text-transform: none;
+}
+
+.shareprice__value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2em;
+  margin-top: 0.3em;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(20px, calc(2.0833 * var(--u)), 40px); /* 40px @ 1920 */
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  color: var(--gold);
+}
+
+.shareprice__value span {
+  font-weight: 700;
+  font-size: 0.4em;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .figures__cream,
+  .figures__bwrap {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .figures__media,
+  .figures__panel {
+    opacity: 1;
+  }
+}
+
+/* -------------------------------------- Stage 3 — achievements takeover -- */
+
+/*
+ * Sits above the Stage 2 layers but below .figures__bwrap, so the B stays
+ * visible on top of it and carries through as a watermark.
+ */
+.achievements {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--sky);
+  /* Wipes in from the right edge and expands left to fill the screen. */
+  clip-path: inset(0% 0% 0% 100%);
+  will-change: clip-path;
+}
+
+.achievements__text {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 0 calc(8 * var(--u));
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+
+.achievements__heading {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(45px, calc(4.1667 * var(--u)), 80px); /* 80px @ 1920 */
+  line-height: 1.125;
+  max-width: calc(48.1771 * var(--u)); /* 925px @ 1920 */
+  letter-spacing: -0.03em;
+  text-align: center;
+  color: var(--snow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .achievements {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .achievements__text {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------ Stage 4 — tablet + content panel -- */
+/* Geometry follows the 1920x1055 Figma frame (node 567:125). */
+
+/* Crossfades over the Stage 3 background; the watermark stays above it. */
+.product__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: var(--sky-dark);
+  opacity: 0;
+  will-change: opacity;
+}
+
+.product__tablet {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(69.5833 * var(--u)); /* 1336px @ 1920 */
+  height: auto;
+  z-index: 9; /* in front of the nautilus watermark */
+  will-change: transform, filter;
+}
+
+.product__panel {
+  position: absolute;
+  left: calc(50 * var(--u)); /* 960px @ 1920 */
+  top: calc(10 * var(--u)); /* 192px @ 1920 */
+  width: calc(41.4583 * var(--u)); /* 796px @ 1920 */
+  z-index: 10;
+  color: #fff;
+  pointer-events: auto;
+  will-change: transform, opacity, filter;
+}
+
+.product__title {
+  margin-left: calc(0.625 * var(--u)); /* 12px @ 1920 */
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(34px, calc(3.3854 * var(--u)), 65px); /* 65px @ 1920 */
+  line-height: 1.0648; /* 69.212px @ 65px */
+  letter-spacing: -0.02em;
+}
+
+.product__intro {
+  margin-left: calc(0.625 * var(--u));
+  margin-top: calc(0.9167 * var(--u)); /* puts it at 156px @ 1920 */
+  max-width: calc(27.9688 * var(--u)); /* 537px @ 1920 */
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: clamp(15px, calc(1.0417 * var(--u)), 20px); /* 20px @ 1920 */
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+/* Chapter list and buttons are inset to 169px @ 1920. */
+.product__chapters,
+.product__actions {
+  margin-left: calc(8.8021 * var(--u)); /* 169px @ 1920 */
+}
+
+.product__chapters {
+  margin-top: calc(4.6875 * var(--u)); /* first row lands at 294px @ 1920 */
+}
+
+.prow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2em;
+  height: calc(4.0104 * var(--u)); /* 77px pitch @ 1920 */
+  color: #fff;
+  text-decoration: none;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+
+.prow:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.prow__num {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(15px, calc(1.0417 * var(--u)), 20px); /* 20px @ 1920 */
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.prow__end {
+  display: flex;
+  align-items: center;
+  gap: calc(1.77 * var(--u)); /* 34px @ 1920 */
+}
+
+.prow__title {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(15px, calc(1.0417 * var(--u)), 20px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-align: right;
+}
+
+.icon--chev {
+  width: calc(0.625 * var(--u)); /* 12px @ 1920 */
+  min-width: 10px;
+  stroke-width: 1.6;
+  transition: transform 0.3s ease;
+}
+
+.prow:hover .icon--chev {
+  transform: translateX(0.25em);
+}
+
+.product__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(2.7604 * var(--u)); /* 53px @ 1920 */
+  margin-top: calc(2.4479 * var(--u)); /* row lands at 649px @ 1920 */
+}
+
+.btn-navy {
+  display: inline-flex;
+  align-items: center;
+  gap: 2em;
+  background: var(--navy);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1.3333em 2em; /* 20px / 30px against 15px */
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-ui);
+  line-height: 1.0667;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
+}
+
+.btn-navy:hover {
+  background: #013e69;
+}
+
+.product__download {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.0667em;
+  padding-bottom: 1.0667em; /* 16px against 15px */
+  border-bottom: 1px solid #fff;
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-ui);
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.product__download .icon--arrow {
+  width: 1.4em;
+  transition: transform 0.3s ease;
+}
+
+.product__download:hover .icon--arrow {
+  transform: translateX(0.25em);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product__bg {
+    opacity: 1;
+  }
+
+  .prow {
+    opacity: 1;
+  }
+}
+
+/* --------------------------------- Stage 5 — sustainability pillars -- */
+/*
+ * Four full-screen panels stacked in place, each carrying its own background
+ * colour. Transitions are a swipe: the incoming panel's clip-path opens from
+ * the right edge across the outgoing one. Geometry follows Figma 631:17757.
+ */
+.pillars {
+  position: absolute;
+  inset: 0;
+  z-index: 11; /* above the Stage 4 tablet and chapter panel */
+}
+
+.pillars__bgs,
+.pillars__lgs,
+.pillars__smls,
+.pillars__words,
+.pillars__bodies {
+  position: absolute;
+  inset: 0;
+}
+
+.pillars__bgs { z-index: 1; }
+.pillars__lgs { z-index: 3; }
+.pillars__smls { z-index: 4; }
+.pillars__words { z-index: 5; }
+.pillars__bodies { z-index: 6; }
+
+/*
+ * Colour and photo both wipe on the same 110deg diagonal. A hard-stop
+ * gradient mask gives the angled edge that clip-path insets cannot; --wipe
+ * runs 0% -> 100% and GSAP tweens it directly.
+ */
+.pillar-bg,
+.pillar-lg,
+.pillar-sml {
+  --wipe: 0%;
+  -webkit-mask-image: linear-gradient(
+    110deg,
+    #000 var(--wipe),
+    transparent var(--wipe)
+  );
+  mask-image: linear-gradient(
+    110deg,
+    #000 var(--wipe),
+    transparent var(--wipe)
+  );
+  will-change: mask-image;
+}
+
+.pillar-bg {
+  position: absolute;
+  inset: 0;
+}
+
+/* Left photo — crossfades between pillars, so it never translates. */
+.pillar-lg {
+  position: absolute;
+  left: calc(-0.2604 * var(--u)); /* -5px @ 1920 */
+  top: 0;
+  width: calc(61.276 * var(--u)); /* 1176.5px @ 1920 */
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  will-change: mask-image, opacity;
+}
+
+/*
+ * Small photo — clips to its own frame so the swipe travels the height of the
+ * photo rather than the whole viewport, which read far too hard.
+ */
+.pillar-sml {
+  position: absolute;
+  left: calc(76.5625 * var(--u)); /* 1470px @ 1920 */
+  top: calc(4.0625 * var(--u)); /* 78px @ 1920 */
+  width: calc(19.8958 * var(--u)); /* 382px @ 1920 */
+  height: calc(21.7708 * var(--u)); /* 418px @ 1920 */
+  overflow: hidden;
+  will-change: mask-image;
+}
+
+.pillar-sml img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  will-change: transform, opacity, filter;
+}
+
+/* Pillar word — swipes vertically inside its own clipped box. */
+.pillar-word {
+  position: absolute;
+  left: calc(58.5938 * var(--u)); /* 1125px @ 1920 */
+  top: calc(30.1563 * var(--u)); /* 579px @ 1920 */
+  display: inline-block;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(38px, calc(4.1463 * var(--u)), 79.608px); /* 79.608px @ 1920 */
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.pillar-word > span {
+  display: block;
+  will-change: transform;
+}
+
+/* Body copy — crossfades; only its bold prefix differs per pillar. */
+.pillar-body {
+  position: absolute;
+  left: calc(61.9271 * var(--u)); /* 1189px @ 1920 */
+  top: calc(38.1771 * var(--u)); /* 733px @ 1920 */
+  width: calc(26.0938 * var(--u)); /* 501px @ 1920 */
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-body);
+  line-height: 1.3251;
+  letter-spacing: -0.02em;
+  color: #fff;
+  opacity: 0;
+  will-change: opacity;
+}
+
+.pillar-body strong {
+  font-weight: 800;
+}
+
+/* Shared, static across all four pillars. */
+.pillars__be {
+  position: absolute;
+  left: calc(34.7396 * var(--u)); /* 667px @ 1920 */
+  top: calc(25.625 * var(--u)); /* 492px @ 1920 */
+  width: calc(24.2188 * var(--u)); /* 465px @ 1920 */
+  height: calc(13.0729 * var(--u)); /* 251px @ 1920 */
+  z-index: 7;
+  opacity: 0;
+  will-change: opacity, filter;
+}
+
+/*
+ * The B from Stage 4, expanded. Its box IS the glyph's ink box in the design
+ * (Figma 631:17802: -29,-576 at 2674x3838), and the mask is sized so B.svg's
+ * ink (2948,4321 / 1318x1891 in a 7460x8854 box) lands exactly on it.
+ * transform-origin 0 0 lets Stage 5's entry scale it up from the Stage 4
+ * watermark's on-screen position without re-deriving the geometry.
+ */
+.pillars__shape {
+  position: absolute;
+  left: calc(-1.5104 * var(--u)); /* -29px @ 1920 */
+  top: calc(-30 * var(--u)); /* -576px @ 1920 */
+  width: calc(139.2708 * var(--u)); /* 2674px @ 1920 */
+  height: calc(199.8958 * var(--u)); /* 3838px @ 1920 */
+  z-index: 2;
+  background: var(--cream);
+  opacity: 0;
+  transform-origin: 0 0;
+  -webkit-mask-image: url('/assets/B.svg');
+  mask-image: url('/assets/B.svg');
+  -webkit-mask-size: calc(788.28 * var(--u)) calc(935.94 * var(--u));
+  mask-size: calc(788.28 * var(--u)) calc(935.94 * var(--u));
+  -webkit-mask-position: calc(-311.51 * var(--u)) calc(-456.77 * var(--u));
+  mask-position: calc(-311.51 * var(--u)) calc(-456.77 * var(--u));
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  will-change: transform, opacity;
+}
+
+.pillar-bg--1 { background: #a2c088; }
+.pillar-bg--2 { background: #8fb8a8; }
+.pillar-bg--3 { background: #c2a482; }
+.pillar-bg--4 { background: #7e9bb5; }
+
+
+
+
+
+
+
+.pillar__body strong {
+  font-weight: 800;
+}
+
+/* Shared across all four pillars — never moves. */
+.pillars__cta {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity, filter;
+}
+
+.pillars__cta > * {
+  pointer-events: auto;
+}
+
+.btn-white {
+  position: absolute;
+  left: calc(61.875 * var(--u)); /* 1188px @ 1920 */
+  top: calc(46.0938 * var(--u)); /* 885px @ 1920 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: var(--ink);
+  border-radius: 3.855px;
+  padding: 1.285em 1.9275em; /* 19.275px / 28.912px against 15px */
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-ui);
+  line-height: 1.542;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
+}
+
+.btn-white:hover {
+  background: #f0efe9;
+}
+
+.pillars__more {
+  position: absolute;
+  left: calc(78.1156 * var(--u)); /* 1499.82px @ 1920 */
+  top: calc(46.6958 * var(--u)); /* 896.56px @ 1920 */
+  display: inline-flex;
+  align-items: center;
+  gap: 1.028em; /* 15.42px against 15px */
+  padding-bottom: 1.028em;
+  border-bottom: 0.964px solid #fff;
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-ui);
+  line-height: 1.542;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pillars__more .icon--arrow {
+  width: 1.349em; /* 20.238px against 15px */
+  transition: transform 0.3s ease;
+}
+
+.pillars__more:hover .icon--arrow {
+  transform: translateX(0.25em);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pillar-bg,
+  .pillar-lg,
+  .pillar-sml {
+    --wipe: 100%;
+  }
+
+  .pillar-lg:last-of-type {
+    opacity: 1;
+  }
+
+  .pillar-body:last-of-type,
+  .pillars__be {
+    opacity: 1;
+  }
+
+  .pillars__shape {
+    opacity: 1;
+  }
+
+
+  .pillars__cta {
+    opacity: 1;
+  }
+}
+
+/* ------------------------- Stage 6 — Our Artisans, horizontal scroll -- */
+/*
+ * Figma frame 635:23156 is 3935px wide against the 1920px viewport, so every
+ * design px maps to px/19.2 vw. The track is 204.9479vw and translates to
+ * -104.9479vw (= -2015px), which is the standard scroll-hijack offset.
+ */
+.artisans {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Swipes up from the bottom, covering the previous stage. */
+.artisans__bg {
+  position: absolute;
+  inset: 0;
+  background: var(--cream);
+  clip-path: inset(100% 0% 0% 0%);
+  will-change: clip-path;
+}
+
+.artisans__track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(204.9479 * var(--u)); /* 3935px @ 1920 */
+  height: 100%;
+  will-change: transform;
+}
+
+/* Everything except the ambient B shapes, which arrive earlier. */
+.artisans__content {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
+/* Each piece arrives on its own once the cream has covered. */
+.artisans__content > * {
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+
+/* The two ambient B shapes sitting behind the content. */
+/*
+ * Figma stacks these after the collage but before the photos, so the shape
+ * reads as cream cut across the image and is invisible against the cream
+ * page behind it.
+ */
+.artisans__vec {
+  position: absolute;
+  z-index: 2;
+  background: var(--cream);
+  opacity: 0;
+  -webkit-mask-image: url('/assets/B.svg');
+  mask-image: url('/assets/B.svg');
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.artisans__vec--1 {
+  left: calc(18.125 * var(--u)); /* 348px */
+  top: calc(28.75 * var(--u)); /* 552px */
+  width: calc(72.5 * var(--u)); /* 1392px */
+  height: calc(104.1146 * var(--u)); /* 1999px */
+  -webkit-mask-size: calc(410.4 * var(--u)) calc(487.05 * var(--u));
+  mask-size: calc(410.4 * var(--u)) calc(487.05 * var(--u));
+  -webkit-mask-position: calc(-162.19 * var(--u)) calc(-237.72 * var(--u));
+  mask-position: calc(-162.19 * var(--u)) calc(-237.72 * var(--u));
+}
+
+/*
+ * This one sits over cream rather than over a photo, so #F4F2EA would render
+ * it invisible — it takes the deeper tint instead.
+ */
+.artisans__vec--2 {
+  background: var(--cream-deep);
+  left: calc(151.8229 * var(--u)); /* 2915px */
+  top: calc(-80.0521 * var(--u)); /* -1537px */
+  width: calc(68.6458 * var(--u)); /* 1318px */
+  height: calc(98.4896 * var(--u)); /* 1891px */
+  -webkit-mask-size: calc(388.54 * var(--u)) calc(461.15 * var(--u));
+  mask-size: calc(388.54 * var(--u)) calc(461.15 * var(--u));
+  -webkit-mask-position: calc(-153.54 * var(--u)) calc(-225.05 * var(--u));
+  mask-position: calc(-153.54 * var(--u)) calc(-225.05 * var(--u));
+}
+
+.artisans__collage {
+  position: absolute;
+  z-index: 1;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+  left: calc(42.0365 * var(--u)); /* 807px */
+  top: calc(1.9271 * var(--u)); /* 37px */
+  width: calc(58.0729 * var(--u)); /* 1115px */
+  height: calc(50.7813 * var(--u)); /* 975px */
+}
+
+.artisans__collage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.artisans__eyebrow {
+  position: absolute;
+  left: calc(5.8333 * var(--u)); /* 112px */
+  top: calc(6.0938 * var(--u)); /* 117px */
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(30px, calc(3.3854 * var(--u)), 65px); /* 65px @ 1920 */
+  line-height: 1.0769;
+  letter-spacing: -0.03em;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.artisans__headline {
+  position: absolute;
+  left: calc(5.9896 * var(--u)); /* 115px */
+  top: calc(10.1563 * var(--u)); /* 195px */
+  width: calc(32.2917 * var(--u)); /* 620px */
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(28px, calc(3.125 * var(--u)), 60px); /* 60px @ 1920 */
+  line-height: 1.0833;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.artisans__body {
+  position: absolute;
+  left: calc(5.6354 * var(--u)); /* 108px */
+  top: calc(18.8542 * var(--u)); /* 362px */
+  width: calc(25 * var(--u)); /* 480px */
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.artisans__body p + p {
+  margin-top: 1.5em;
+}
+
+.artisans__body strong {
+  font-weight: 700;
+}
+
+.artisans__stat {
+  position: absolute;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(40px, calc(4.6875 * var(--u)), 90px); /* 90px @ 1920 */
+  line-height: 1.001;
+  letter-spacing: -0.03em;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.artisans__stat--1 { left: calc(5.9896 * var(--u)); top: calc(32.0313 * var(--u)); }
+.artisans__stat--2 { left: calc(6.0938 * var(--u)); top: calc(38.2813 * var(--u)); }
+
+.artisans__label {
+  position: absolute;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.artisans__label--1 { left: calc(22.5469 * var(--u)); top: calc(34.7396 * var(--u)); width: calc(9.4271 * var(--u)); }
+.artisans__label--2 { left: calc(16.7708 * var(--u)); top: calc(41.0417 * var(--u)); width: calc(16.6667 * var(--u)); }
+
+.artisans__photo {
+  position: absolute;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.artisans__photo--1 {
+  left: calc(111.5104 * var(--u)); /* 2141px */
+  top: calc(6.1458 * var(--u)); /* 118px */
+  width: calc(23.9063 * var(--u)); /* 459px */
+  height: calc(31.5625 * var(--u)); /* 606px */
+}
+
+.artisans__photo--2 {
+  left: calc(129.8385 * var(--u)); /* 2493px */
+  top: calc(23.75 * var(--u)); /* 456px */
+  width: calc(18.9063 * var(--u)); /* 363px */
+  height: calc(24.8438 * var(--u)); /* 477px */
+}
+
+.artisans__photo--3 {
+  left: calc(151.8229 * var(--u)); /* 2915px */
+  top: calc(13.6458 * var(--u)); /* 262px */
+  width: calc(18.9063 * var(--u)); /* 363px */
+  height: calc(24.8438 * var(--u)); /* 477px */
+}
+
+.artisans__closing {
+  position: absolute;
+  left: calc(174.5781 * var(--u)); /* 3352px */
+  top: calc(23.9063 * var(--u)); /* 459px */
+  width: calc(23.5417 * var(--u)); /* 452px */
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(28px, calc(3.125 * var(--u)), 60px);
+  line-height: 1.1667;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.artisans__closing-body {
+  position: absolute;
+  left: calc(177.4583 * var(--u)); /* 3407px */
+  top: calc(37.8125 * var(--u)); /* 726px */
+  width: calc(22.0833 * var(--u)); /* 424px */
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.btn-black {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: #fff;
+  border-radius: 4px;
+  padding: 1.3333em 2em; /* 20px / 30px against 15px */
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-ui);
+  line-height: 1.0667;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  pointer-events: auto;
+  transition: background-color 0.3s ease;
+}
+
+.btn-black:hover {
+  background: #1f1f1f;
+}
+
+.artisans__cta--1,
+.artisans__cta--2 {
+  position: absolute;
+}
+
+.artisans__cta--1 { left: calc(5.625 * var(--u)); top: calc(46.875 * var(--u)); }
+.artisans__cta--2 { left: calc(177.4948 * var(--u)); top: calc(45.5208 * var(--u)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .artisans__bg {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .artisans__vec,
+  .artisans__collage,
+  .artisans__content > * {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------- Stage 7 — news slider -- */
+/*
+ * Not pinned — a normal-flow section the page scrolls past. Cards are 470px
+ * with 24px gaps on the 1920 canvas, so ~3.4 fit and the fourth is cropped
+ * by the viewport edge, which is what signals more content.
+ */
+/*
+ * Sticks while the footer rides up over it, so the footer's charcoal curtain
+ * covers a stationary section — the same read as the artisans stage, without
+ * a second pin.
+ */
+.news {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--cream);
+  color: var(--ink);
+  padding: 7.2917vw 0 6.25vw; /* 140px / 120px @ 1920 */
+  overflow: hidden;
+}
+
+.news__head {
+  display: flex;
+  align-items: center;
+  gap: 2.0833vw; /* 40px @ 1920 */
+  padding: 0 5.2083vw; /* 100px @ 1920 */
+  margin-bottom: 3.3333vw; /* 64px @ 1920 */
+}
+
+.news__all {
+  flex: 0 0 auto;
+}
+
+.news__title {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(28px, 3.125vw, 60px); /* 60px @ 1920 */
+  line-height: 1.0833;
+  letter-spacing: -0.03em;
+}
+
+.news__nav {
+  display: flex;
+  gap: 0.8333vw; /* 16px @ 1920 */
+  margin-left: auto; /* arrows, rail and CTA all sit right of the title */
+}
+
+.news__arrow {
+  width: 2.5vw; /* 48px @ 1920 */
+  height: 2.5vw;
+  min-width: 40px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: none;
+  color: var(--gold);
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease,
+    color 0.3s ease, opacity 0.3s ease;
+}
+
+.news__arrow svg {
+  width: 1.1458vw; /* 22px @ 1920 */
+  min-width: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.news .news__arrow:disabled {
+  border-color: rgba(51, 51, 51, 0.2);
+  color: rgba(51, 51, 51, 0.35);
+  cursor: default;
+}
+
+.news .news__arrow:hover:not(:disabled) {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+
+/* Bleeds to the right edge so the last card is cropped, not padded. */
+.news__viewport {
+  padding-left: 5.2083vw; /* 100px @ 1920 */
+  overflow: hidden;
+}
+
+.news__track {
+  display: flex;
+  gap: 1.25vw; /* 24px @ 1920 */
+  will-change: transform;
+}
+
+.ncard {
+  flex: 0 0 auto;
+  width: 24.4792vw; /* 470px @ 1920 */
+  min-width: 260px;
+}
+
+.ncard__link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.ncard__media {
+  position: relative;
+  height: 30.2083vw; /* 580px @ 1920 */
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/*
+ * Only the photo reacts to hover — the rule and title stay sharp. Promoted to
+ * its own layer so the blur does not re-rasterise on every frame.
+ */
+.ncard__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+  transition: filter 0.3s ease, transform 0.3s ease;
+  will-change: filter, transform;
+}
+
+.ncard__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.ncard__link:hover .ncard__media img {
+  filter: blur(2px);
+  transform: translateZ(0) scale(1.03);
+}
+
+.ncard__link:hover .ncard__scrim {
+  opacity: 1;
+}
+
+.ncard__tag,
+.ncard__date {
+  position: absolute;
+  top: 1.0417vw; /* 20px @ 1920 */
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(11px, 0.6771vw, 13px); /* 13px @ 1920 */
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.ncard__tag {
+  left: 1.0417vw;
+  padding: 0.55em 0.9em;
+  border-radius: 4px;
+  background: #a28448;
+  text-transform: uppercase;
+}
+
+.ncard__date {
+  right: 1.0417vw;
+  padding: 0.55em 0;
+}
+
+.ncard__rule {
+  display: block;
+  height: 1px;
+  margin: 1.25vw 0 1.0417vw; /* 24px / 20px @ 1920 */
+  background: rgba(51, 51, 51, 0.25);
+}
+
+.ncard__title {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(15px, 1.0417vw, 20px); /* 20px @ 1920 */
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+/* Progress rail spanning the header between the arrows and the CTA. */
+.news__progress {
+  position: relative;
+  flex: 0 0 auto;
+  width: 33.12vw; /* 636px @ 1920 */
+  height: 1px;
+  background: rgba(51, 51, 51, 0.18);
+}
+
+.news__progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 50%;
+  background: var(--gold);
+  will-change: transform, width;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ncard__media img,
+  .ncard__scrim {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------- Stage 8 — footer -- */
+/*
+ * Figma frame 640:23448 is 1920x1163, so every design px maps to px/19.2 vw.
+ * Normal flow — only the entry wipe is scroll-driven.
+ */
+.footer {
+  position: relative;
+  z-index: 2; /* rides over the sticky news section */
+  height: 60.5729vw; /* 1163px @ 1920 */
+  min-height: 900px;
+  overflow: hidden;
+  color: #fff;
+}
+
+/* Wipes up from the bottom as the footer enters. */
+.footer__panel {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  clip-path: inset(100% 0% 0% 0%);
+  will-change: clip-path;
+}
+
+.footer [data-fx] {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/*
+ * The stacked column pairs sit in flow inside these groups rather than being
+ * absolutely placed. Their tops were in vw while the link text bottoms out at
+ * the clamp floor, so below ~1600px the text outgrew the gap and the pairs
+ * collided. Flow can't overlap.
+ */
+.footer__colgroup {
+  position: absolute;
+  top: 10.3125vw; /* aligned with the logo's top edge */
+  display: flex;
+  flex-direction: column;
+  gap: 2.0833vw; /* 40px @ 1920 */
+}
+
+.footer__colgroup--1 { left: 44.1146vw; width: 14.7396vw; } /* 847px / 283px */
+.footer__colgroup--2 { left: 58.8542vw; width: 19.1667vw; } /* 1130px / 368px */
+.footer__colgroup--3 { left: 78.0208vw; } /* 1498px */
+
+.footer__legal,
+.footer__closing {
+  position: absolute;
+}
+
+/* Logo, mission and badge stack in flow so the gaps always hold. */
+.footer__brand {
+  position: absolute;
+  left: 5.9896vw; /* 115px @ 1920 */
+  top: 10.3125vw; /* 198px @ 1920 */
+  width: 21.3542vw; /* 410px @ 1920 */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.8229vw; /* 35px @ 1920 */
+}
+
+.footer__logo {
+  width: 13.75vw; /* 264px @ 1920 */
+  height: 8.3854vw; /* 161px @ 1920 */
+}
+
+.footer__mission {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+}
+
+.footer__mission strong {
+  font-weight: 600;
+}
+
+.footer__badge {
+  width: 4.8958vw; /* 94px @ 1920 */
+  height: 5.8333vw; /* 112px */
+  object-fit: contain;
+}
+
+.footer__col h3 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(11px, 0.7292vw, 14px); /* 14px @ 1920 */
+  line-height: 1;
+  letter-spacing: 0.2em; /* 2.8px @ 14px */
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1.0417vw; /* 20px @ 1920 */
+}
+
+.footer__col ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8333vw; /* 16px @ 1920 */
+}
+
+.footer__col a,
+.footer__col address {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-body);
+  line-height: 1.25;
+  font-style: normal;
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer__col a:hover {
+  color: var(--gold);
+}
+
+/* Column blocks now flow inside their group — no absolute tops to collide. */
+
+.footer__col--location address {
+  line-height: 1.25;
+}
+
+.footer__col--contact ul {
+  gap: 0.625vw; /* 12px @ 1920 */
+}
+
+.footer__social {
+  display: flex;
+  gap: 0.5156vw; /* 9.9px @ 1920 */
+}
+
+.footer__social img {
+  width: 1.7188vw; /* 33px @ 1920 */
+  height: 1.7188vw;
+  min-width: 26px;
+  min-height: 26px;
+  display: block;
+  transition: opacity 0.3s ease;
+}
+
+.footer__social a:hover img {
+  opacity: 0.7;
+}
+
+.footer__top {
+  align-self: flex-start;
+  margin-top: 1.25vw; /* 24px @ 1920 */
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(11px, 0.7292vw, 14px);
+  line-height: 1;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  transition: opacity 0.3s ease;
+}
+
+.footer__top:hover {
+  opacity: 0.7;
+}
+
+/*
+ * 125px below the "Back to top" baseline. That link now flows at the end of
+ * the third column group, landing at ~643px on the 1920 canvas, so the row
+ * sits at 768px.
+ */
+.footer__legal {
+  top: 40vw; /* 768px @ 1920 */
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.footer__legal--copy {
+  left: 5.9896vw; /* 115px */
+  font-weight: 600;
+}
+
+.footer__legal--links {
+  left: 44.1667vw; /* 848px */
+  list-style: none;
+  display: flex;
+  gap: 3.0208vw; /* 58px @ 1920 */
+}
+
+.footer__legal--links a {
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer__legal--links a:hover {
+  color: var(--gold);
+}
+
+.footer__legal--site {
+  left: 87.0313vw; /* 1671px */
+}
+
+.footer__legal--site strong {
+  font-weight: 600;
+}
+
+.footer__closing {
+  left: 9.6755vw; /* 186px */
+  top: 47.5vw; /* 912px @ 1920 */
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 7.4668vw; /* 143.363px @ 1920 */
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer__panel {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .footer [data-fx] {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------- Back-to-top navy curtain -- */
+
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--navy);
+  clip-path: inset(100% 0% 0% 0%);
+  pointer-events: none;
+  will-change: clip-path;
+}
+
+/* ==================================================================== */
+/* Responsive — tablet and mobile                                        */
+/* ==================================================================== */
+/*
+ * Everything above is positioned against the 1920 Figma canvas in vw. That
+ * holds down to roughly 1280px; below it the clamped type stops shrinking
+ * while the vw coordinates keep closing, so fixed positions start colliding.
+ * These blocks retire the absolute coordinates stage by stage and let the
+ * content flow instead.
+ *
+ * There are no tablet or mobile frames in the Figma file, so these layouts
+ * are judgement calls, not translations.
+ */
+
+@media (max-width: 1280px) {
+  /* --- Stage 1: hero --- */
+  .hero__content {
+    padding: 0 6vw;
+  }
+
+  .hero__lower {
+    padding-left: 0;
+    gap: 5vw;
+  }
+
+  .hero__body {
+    max-width: 42ch;
+  }
+
+  /* --- Stage 2: figures --- */
+  .figures__panel {
+    left: 6vw;
+    top: 12vw;
+    width: 46vw;
+  }
+
+  .figures__window {
+    height: 17vw;
+  }
+
+  .figure {
+    height: 19vw;
+  }
+
+  /* --- Stage 4: tablet + chapters --- */
+  .product__panel {
+    left: 48vw;
+    width: 46vw;
+    top: 8vw;
+  }
+
+  .product__chapters,
+  .product__actions {
+    margin-left: 0;
+  }
+
+  /* --- Stage 5: pillars --- */
+  .pillar-word {
+    left: 52vw;
+    top: 34vw;
+  }
+
+  .pillar-body {
+    left: 52vw;
+    top: 44vw;
+    width: 40vw;
+  }
+
+  .pillars__be {
+    left: 26vw;
+    top: 27vw;
+    width: 22vw;
+    height: 11.87vw;
+  }
+
+  .pillars__cta {
+    left: 52vw;
+    top: 58vw;
+  }
+
+  /* --- Stage 8: footer --- */
+  .footer__colgroup--1 { left: 34vw; width: 20vw; }
+  .footer__colgroup--2 { left: 56vw; width: 20vw; }
+  .footer__colgroup--3 { left: 78vw; }
+}
+
+@media (max-width: 900px) {
+  /*
+   * Below this the side-by-side stage layouts stop working at all, so each
+   * stage becomes a single padded column.
+   */
+
+  /* --- Stage 1: hero --- */
+  .hero__headline {
+    font-size: clamp(30px, 8vw, 56px);
+  }
+
+  .hero__lower {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6vw;
+  }
+
+  .hero__ctas {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4vw;
+  }
+
+  /* --- Stage 2: figures --- */
+  .figures__media {
+    width: 100%;
+    opacity: 0.28; /* becomes a backdrop rather than a column */
+  }
+
+  .figures__panel {
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    padding: 14vw 7vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .figures__intro {
+    max-width: none;
+  }
+
+  .figures__window {
+    margin-top: 8vw;
+    height: 32vw;
+  }
+
+  .figure {
+    height: 36vw;
+  }
+
+  .figures__actions {
+    margin-top: 8vw;
+    margin-bottom: 0;
+    gap: 6vw;
+  }
+
+  .figure__value {
+    font-size: clamp(52px, 20vw, 120px);
+  }
+
+  /* --- Stage 3: achievements --- */
+  .achievements__text {
+    padding: 0 8vw;
+  }
+
+  .achievements__heading {
+    max-width: none;
+    font-size: clamp(28px, 7vw, 48px);
+  }
+
+  /* --- Stage 4: tablet + chapters --- */
+  .product__tablet {
+    width: 96vw;
+    top: 26%;
+  }
+
+  .product__panel {
+    left: 0;
+    top: auto;
+    bottom: 4vw;
+    width: 100%;
+    padding: 0 7vw;
+  }
+
+  .product__title {
+    margin-left: 0;
+    font-size: clamp(26px, 6.5vw, 40px);
+  }
+
+  .product__intro {
+    margin-left: 0;
+    max-width: none;
+  }
+
+  .prow {
+    height: auto;
+    padding: 3.5vw 0;
+  }
+
+  /* --- Stage 5: pillars --- */
+  .pillar-lg {
+    left: 0;
+    width: 100%;
+  }
+
+  .pillar-sml {
+    display: none; /* no room for the inset photo at this width */
+  }
+
+  .pillars__be {
+    left: 7vw;
+    top: 46vw;
+    width: 34vw;
+    height: 18.35vw;
+  }
+
+  .pillar-word {
+    left: 7vw;
+    top: 66vw;
+    font-size: clamp(30px, 9vw, 56px);
+  }
+
+  .pillar-body {
+    left: 7vw;
+    top: 84vw;
+    width: 86vw;
+  }
+
+  .pillars__cta {
+    left: 7vw;
+    top: 118vw;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5vw;
+  }
+
+  /* --- Stage 6: artisans --- */
+  .artisans__eyebrow { left: 7vw; top: 12vw; }
+  .artisans__headline { left: 7vw; top: 22vw; width: 62vw; }
+  .artisans__body { left: 7vw; top: 48vw; width: 62vw; }
+  .artisans__stat--1 { left: 7vw; top: 96vw; }
+  .artisans__label--1 { left: 7vw; top: 118vw; width: 40vw; }
+  .artisans__stat--2 { left: 7vw; top: 130vw; }
+  .artisans__label--2 { left: 7vw; top: 152vw; width: 50vw; }
+  .artisans__cta--1 { left: 7vw; top: 168vw; }
+
+  /* --- Stage 7: news --- */
+  .news__head {
+    flex-wrap: wrap;
+    gap: 4vw;
+    padding: 0 7vw;
+  }
+
+  .news__title {
+    flex: 1 1 100%;
+    font-size: clamp(26px, 7vw, 40px);
+  }
+
+  .news__progress {
+    width: 30vw;
+  }
+
+  .news__viewport {
+    padding-left: 7vw;
+  }
+
+  .ncard {
+    width: 74vw;
+  }
+
+  .ncard__media {
+    height: 92vw;
+  }
+
+  /* --- Stage 8: footer --- */
+  .footer {
+    height: auto;
+    min-height: 0;
+    padding: 26vw 7vw 12vw;
+  }
+
+  .footer__brand,
+  .footer__colgroup,
+  .footer__legal,
+  .footer__closing {
+    position: static;
+    width: auto;
+  }
+
+  .footer__brand {
+    margin-bottom: 12vw;
+  }
+
+  .footer__logo { width: 46vw; height: auto; }
+  .footer__mission { width: 100%; }
+  .footer__badge { width: 18vw; height: auto; }
+
+  .footer__colgroup {
+    margin-bottom: 10vw;
+  }
+
+  .footer__legal--links {
+    flex-wrap: wrap;
+    gap: 5vw;
+    margin: 6vw 0;
+  }
+
+  .footer__legal {
+    white-space: normal;
+  }
+
+  .footer__closing {
+    margin-top: 10vw;
+    font-size: clamp(30px, 10vw, 64px);
+    white-space: normal;
+  }
 }
