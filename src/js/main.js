@@ -344,7 +344,9 @@ function addHero(tl, reduceMotion) {
     K1_END
   );
 
-  tl.fromTo(mark, { opacity: 1 }, { opacity: 0, duration: k1k2Dur }, K1_END);
+  /* Mark stays visible (white/solid) through Phases 2-3; video appears inside
+     via mask. Only fades out in Phase 4. */
+  /* No mark opacity change here — keep at 1 through K3 */
   tl.to(videoWrap, { opacity: 1, duration: k1k2Dur }, K1_END);
 
   /* --- K2 -> K3: 1.0 -> 1.7 — Phase 3: mark grows to full coverage;
@@ -371,8 +373,8 @@ function addHero(tl, reduceMotion) {
          slide in and fade. Mark stays at opacity 0 (not visible; nav has
          its own separate small logo). --- */
 
-  /* Mark is already at opacity 0 from K1->K2, keep it there — don't fade
-     back in. Nav has its own separate logo, not the giant mark shrinking. */
+  /* Phase 4: Mark fades out completely, background crossfades to video. */
+  tl.to(mark, { opacity: 0, duration: 0.4, ease: 'power2.in' }, K3_END + 0.05);
 
   /* Background crossfades from #B0C2C4 to transparent, revealing the frozen
      video backdrop that now fills the entire viewport. */
