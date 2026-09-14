@@ -156,291 +156,215 @@ function initScene() {
 }
 
 /*
- * Contain-fits rawBBox (raw artwork units) into targetPx (a px rect on
- * screen), preserving aspect and centring on whichever axis has slack —
- * same semantics as SVG's own default preserveAspectRatio="xMidYMid meet".
- * Returns an SVG transform-attribute string (translate + scale), applied
- * directly via GSAP's attr config rather than CSS transform/transform-
- * origin — CSS transform-origin on a <g> inside a hidden, viewBox-less
- * <svg> resolved against the wrong reference box when this was tried
- * earlier this session (verified in-browser: the shape landed ~1300px
- * off-screen); the raw attribute form has no such ambiguity.
+ * Stage 1 (Figma frames 1-1 .. 1-5). The video plays full-bleed underneath;
+ * one canvas on top paints the stone backdrop with the B+sunburst cut out of
+ * it, so the video shows through the mark. Mark geometry comes straight from
+ * /assets/logo-fullwhite.svg as Path2D, drawn with a single setTransform —
+ * the hole and the white fill can never drift apart.
  */
-/*
- * Contain-fits rawBBox (raw artwork units) into targetPx (a px rect on
- * screen), preserving aspect and centring on whichever axis has slack —
- * same semantics as SVG's own default preserveAspectRatio="xMidYMid meet".
- * Returns an SVG transform-attribute string (translate + scale), applied
- * directly via GSAP's attr config rather than CSS transform/transform-
- * origin — CSS transform-origin on a <g> inside a hidden, viewBox-less
- * <svg> resolved against the wrong reference box when this was tried
- * earlier this session (verified in-browser: the shape landed ~1300px
- * off-screen); the raw attribute form has no such ambiguity.
- */
-function transformFor(rawBBox, targetPx) {
-  if (!targetPx || !rawBBox || targetPx.w <= 0 || targetPx.h <= 0) {
-    return 'translate(0 0) scale(1)';
-  }
-  const scale = Math.min(targetPx.w / rawBBox.w, targetPx.h / rawBBox.h);
-  if (!Number.isFinite(scale)) return 'translate(0 0) scale(1)';
+const MARK_BBOX = { x: 166.14, y: 0, w: 155.19, h: 185.09 };
+const LOCKUP_BBOX = { x: 0, y: 0, w: 487.57, h: 295.53 };
+const B_ANCHOR = { x: 241.2, y: 110.1 }; // centre of the inner "B"
+const B_HEIGHT = 39.5;
 
-  const renderedW = rawBBox.w * scale;
-  const renderedH = rawBBox.h * scale;
-  const offsetX = targetPx.x + (targetPx.w - renderedW) / 2;
-  const offsetY = targetPx.y + (targetPx.h - renderedH) / 2;
-  const tx = offsetX - rawBBox.x * scale;
-  const ty = offsetY - rawBBox.y * scale;
+// % of the 1920x921 canvas, measured from frames 1-1 / 1-2 / 1-3.
+const LOCKUP_REST = { left: 37.318, top: 33.985, width: 25.394, height: 32.088 };
+const K1 = { left: 42.72, top: 31.95, width: 14.52, height: 36.11 };
+const K2 = { left: 35.74, top: 14.6, width: 28.48, height: 70.81 };
+const K3_B_COVER = 0.77; // frame 1-4: the B spans ~77% of viewport height
+const K4_EXTRA = 2.2;
+const WORDMARK_DROP_PCT = 11.378;
 
-  if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
-    return 'translate(0 0) scale(1)';
-  }
-  return `translate(${tx} ${ty}) scale(${scale})`;
+const toPx = (pct) => ({
+  x: (pct.left / 100) * window.innerWidth,
+  y: (pct.top / 100) * window.innerHeight,
+  w: (pct.width / 100) * window.innerWidth,
+  h: (pct.height / 100) * window.innerHeight,
+});
+
+function fit(bbox, r) {
+  const s = Math.min(r.w / bbox.w, r.h / bbox.h);
+  return {
+    s,
+    tx: r.x + (r.w - bbox.w * s) / 2 - bbox.x * s,
+    ty: r.y + (r.h - bbox.h * s) / 2 - bbox.y * s,
+  };
 }
 
-function scaleRectAroundCenter(rect, factor) {
-  const cx = rect.x + rect.w / 2;
-  const cy = rect.y + rect.h / 2;
-  const w = rect.w * factor;
-  const h = rect.h * factor;
-  return { x: cx - w / 2, y: cy - h / 2, w, h };
+const anchorOf = (t) => ({ x: t.tx + t.s * B_ANCHOR.x, y: t.ty + t.s * B_ANCHOR.y });
+
+async function loadLogoPaths() {
+  const svg = await fetch('/assets/logo-fullwhite.svg').then((r) => r.text());
+  const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
+  const mark = new Path2D();
+  const wordmark = new Path2D();
+  doc.querySelectorAll('path').forEach((p) => {
+    const d = p.getAttribute('d');
+    const y = parseFloat(d.match(/^M\s*[-\d.]+[\s,]+([-\d.]+)/)[1]);
+    (y > 190 ? wordmark : mark).addPath(new Path2D(d));
+  });
+  return { mark, wordmark };
 }
 
 function addHero(tl, reduceMotion) {
   const hero = document.querySelector('[data-hero]');
-  const bg = hero.querySelector('[data-hero-bg]');
-  const maskGroup = hero.querySelector('[data-hero-mask-group]');
-  const videoWrap = hero.querySelector('[data-hero-video-wrap]');
+  const canvas = hero.querySelector('[data-hero-canvas]');
+  const shade = hero.querySelector('[data-hero-shade]');
   const video = hero.querySelector('.hero__video');
-  const markGroup = hero.querySelector('[data-hero-mark-group]');
-  const mark = hero.querySelector('[data-hero-mark]');
-  const wordmarkGroup = hero.querySelector('[data-hero-wordmark-group]');
-  const wordmark = hero.querySelector('[data-hero-wordmark]');
   const nav = hero.querySelector('[data-hero-nav]');
+  const navLogo = hero.querySelector('[data-hero-nav-logo]');
   const content = hero.querySelector('[data-hero-content]');
   const ctas = hero.querySelectorAll('[data-hero-cta]');
 
-  /*
-   * Raw geometry measured from logo-fullwhite.svg (viewBox 0 0 488 296) via
-   * getBBox() in-browser — a clean gap in the paths' y-midpoints (162 to
-   * 225) splits its 62 flat, ungrouped paths into 37 (the mark) + 25 (the
-   * wordmark), confirmed against frame 1-1's own sub-frame bboxes:
-   *   whole lockup:      0, 0, 487.57, 295.53
-   *   mark alone:        166.14, 0, 155.19, 185.09
-   *   wordmark alone:    0, 194.78, 487.57, 100.75
-   */
-  const MARK_BBOX = { x: 166.14, y: 0, w: 155.19, h: 185.09 };
-  const LOCKUP_BBOX = { x: 0, y: 0, w: 487.57, h: 295.53 };
-  const LOCKUP_REST = { left: 37.318, top: 33.985, width: 25.394, height: 32.088 }; // 1-1
+  const navEndTop = 8.198;
+  const navStartTop = -24.17;
+  const contentEndTop = 45.96;
+  const contentStartTop = 124.79;
 
-  /*
-   * Five keyframe rects (all %, measured directly from Figma frames 1-1
-   * through 1-5, node ids 977:237 / 980:436 / 998:849 / 980:511 / 931:4633
-   * — a 1920x921 canvas) rather than formula-derived: the design doesn't
-   * scale the mark uniformly around one fixed centre the whole way through
-   * — 1-1 sits off-centre (within the lockup), 1-2/1-3 recentre and grow,
-   * so each stop is taken from its own frame instead of extrapolated.
-   */
-  const K0 = { left: 45.97, top: 33.985, width: 8.083, height: 20.097 }; // 1-1, rest
-  const K1 = { left: 42.72, top: 31.95, width: 14.52, height: 36.11 }; // 1-2
-  const K2 = { left: 35.74, top: 14.6, width: 28.48, height: 70.81 }; // 1-3
-
-  // K3 (~1-4's magnitude) is computed, not copied from the frame: 1-4's own
-  // numbers drift off-centre (likely a corner-drag scale in Figma, not
-  // deliberate — 1-1/1-2/1-3 are all cleanly centred). Recentred here, and
-  // sized to guarantee real coverage on any viewport rather than baking in
-  // one screenshot's aspect ratio, with 1-4's own ~18x growth as a floor.
-  const K3_FACTOR_FLOOR = 18;
-  const toPx = (pct) => ({
-    x: (pct.left / 100) * window.innerWidth,
-    y: (pct.top / 100) * window.innerHeight,
-    w: (pct.width / 100) * window.innerWidth,
-    h: (pct.height / 100) * window.innerHeight,
-  });
-
-  const k3RectPx = () => {
-    const restPx = toPx(K0);
-    const restReach = 0.5 * Math.hypot(restPx.w, restPx.h);
-    const viewportHalfDiag =
-      0.5 * Math.hypot(window.innerWidth, window.innerHeight);
-    const coverageFactor = (viewportHalfDiag / restReach) * 1.2;
-    const factor = Math.max(coverageFactor, K3_FACTOR_FLOOR);
-    return scaleRectAroundCenter(restPx, factor);
-  };
-
-  // K5 — the nav-logo slot, measured from frame 1-5's Calque_1: 828,41 /
-  // 264,161 on the 1920x921 canvas.
-  const K5 = { left: 43.125, top: 4.451, width: 13.75, height: 17.48 };
-  const k5RectPx = () => toPx(K5);
-
-  const navEndTop = 8.198; // % — avg of menu (76.5px) and search (74.5px)
-  const navStartTop = -24.17; // % — off-screen above; not design-specified
-  const contentEndTop = 45.96; // % — frame 1-5's content group
-  const contentStartTop = 124.79; // % — below the fold; not design-specified
+  if (video) {
+    const play = () => video.paused && video.play().catch(() => {});
+    play();
+    ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach((type) =>
+      window.addEventListener(type, play, { once: true, passive: true })
+    );
+  }
 
   if (reduceMotion) {
-    const endRect = k5RectPx();
-    gsap.set(markGroup, { attr: { transform: () => transformFor(MARK_BBOX, endRect) } });
-    gsap.set(maskGroup, { attr: { transform: () => transformFor(MARK_BBOX, endRect) } });
-    gsap.set([mark, wordmark], { y: 0 });
-    gsap.set(mark, { opacity: 1 });
-    gsap.set(wordmark, { opacity: 0 });
-    gsap.set(bg, { opacity: 0 });
-    gsap.set(videoWrap, { opacity: 0 });
+    gsap.set(canvas, { autoAlpha: 0 });
+    gsap.set([shade, navLogo], { opacity: 1 });
     gsap.set(nav, { top: navEndTop + '%', opacity: 1 });
     gsap.set(content, { top: contentEndTop + '%', opacity: 1 });
     gsap.set(ctas, { y: 0, opacity: 1, filter: BLUR_OUT });
-    if (video) video.play().catch(() => {});
     return;
   }
 
-  /*
-   * Load-in: the logo (mark + wordmark together, at rest) slides down from
-   * above and fades in, once, independent of scroll — styled like nav's own
-   * entrance elsewhere in the sequence. This is a separate CSS transform on
-   * each outer <svg>, layered on top of the inner <g>'s own scroll-scrubbed
-   * attr transform, so the two never fight.
-   */
-  const lockupRestRectPx = () => toPx(LOCKUP_REST);
-  const WORDMARK_DROP_PCT = 11.378; // % of viewport height — 104.79px @ 921, frame 1-2
-  const lockupDroppedRectPx = () => {
-    const r = lockupRestRectPx();
-    return { ...r, y: r.y + (WORDMARK_DROP_PCT / 100) * window.innerHeight };
-  };
+  const ctx = canvas.getContext('2d');
+  const stone =
+    getComputedStyle(document.documentElement).getPropertyValue('--stone').trim() || '#b0c2c4';
+  const state = { m: 0, reveal: 0, word: 1, drop: 0, intro: 0 };
+  let paths = null;
+  let stops = [];
+  let lockupT = null;
+  let dpr = 1;
 
-  // Ensure maskGroup has valid initial transform to prevent NaN errors
-  const k0Transform = transformFor(MARK_BBOX, toPx(K0));
-  if (k0Transform) {
-    maskGroup.setAttribute('transform', k0Transform);
+  function measure() {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+
+    lockupT = fit(LOCKUP_BBOX, toPx(LOCKUP_REST));
+    const t1 = fit(MARK_BBOX, toPx(K1));
+    const t2 = fit(MARK_BBOX, toPx(K2));
+    const s3 = (K3_B_COVER * H) / B_HEIGHT;
+    const centre = { x: W / 2, y: H / 2 };
+    stops = [
+      { s: lockupT.s, a: anchorOf(lockupT) },
+      { s: t1.s, a: anchorOf(t1) },
+      { s: t2.s, a: anchorOf(t2) },
+      { s: s3, a: centre },
+      { s: s3 * K4_EXTRA, a: centre },
+    ];
   }
 
-  tl.set(wordmarkGroup, {
-    attr: { transform: () => transformFor(LOCKUP_BBOX, lockupRestRectPx()) },
+  function render() {
+    if (canvas.style.visibility === 'hidden') return;
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = stone;
+    ctx.fillRect(0, 0, W, H);
+    if (!paths) return;
+
+    const i = Math.min(Math.floor(state.m), stops.length - 2);
+    const f = state.m - i;
+    const A = stops[i];
+    const B = stops[i + 1];
+    const s = A.s * Math.pow(B.s / A.s, f);
+    const ax = A.a.x + (B.a.x - A.a.x) * f;
+    const ay = A.a.y + (B.a.y - A.a.y) * f;
+    const tx = ax - s * B_ANCHOR.x;
+    const ty = ay - s * B_ANCHOR.y;
+
+    ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * tx, dpr * ty);
+    if (state.reveal > 0) {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.globalAlpha = state.reveal;
+      ctx.fill(paths.mark);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    const markAlpha = (1 - state.reveal) * state.intro;
+    if (markAlpha > 0) {
+      ctx.globalAlpha = markAlpha;
+      ctx.fillStyle = '#fff';
+      ctx.fill(paths.mark);
+    }
+
+    const wordAlpha = state.word * state.intro;
+    if (wordAlpha > 0) {
+      const dy = state.drop * (WORDMARK_DROP_PCT / 100) * H;
+      ctx.setTransform(dpr * lockupT.s, 0, 0, dpr * lockupT.s, dpr * lockupT.tx, dpr * (lockupT.ty + dy));
+      ctx.globalAlpha = wordAlpha;
+      ctx.fillStyle = '#fff';
+      ctx.fill(paths.wordmark);
+    }
+  }
+
+  measure();
+  window.addEventListener('resize', measure);
+  gsap.ticker.add(render);
+  loadLogoPaths().then((p) => {
+    paths = p;
+    gsap.to(state, { intro: 1, duration: 1.1, ease: 'power2.out' });
   });
-  tl.set([markGroup, maskGroup], {
-    attr: { transform: () => transformFor(MARK_BBOX, toPx(K0)) },
-  });
 
-  // Mark starts white/solid (opacity 1), only wordmark fades in then out
-  gsap.set(mark, { opacity: 1 });
-  gsap.fromTo(
-    wordmark,
-    { opacity: 0 },
-    { opacity: 1, duration: 1.1, ease: 'power2.out' }
-  );
+  gsap.set([shade, navLogo], { opacity: 0 });
 
-  /* --- K0 -> K1: 0 -> 0.5 — wordmark fades + drops; mark recentres and
-         grows to ~1.8x (frame 1-2). --- */
+  /* 1-1 -> 1-2: wordmark fades + drops; mark recentres and grows, white. */
+  tl.to(state, { m: 1, duration: 0.5 }, 0);
+  tl.to(state, { word: 0, drop: 1, duration: 0.35, ease: 'power1.in' }, 0);
 
-  const K1_END = 0.5;
+  /* 1-2 -> 1-3: keeps growing; white fill gives way to the video. */
+  tl.to(state, { m: 2, duration: 0.5 }, 0.5);
+  tl.to(state, { reveal: 1, duration: 0.5 }, 0.5);
 
-  tl.fromTo(
-    wordmarkGroup,
-    { attr: { transform: () => transformFor(LOCKUP_BBOX, lockupRestRectPx()) } },
-    { attr: { transform: () => transformFor(LOCKUP_BBOX, lockupDroppedRectPx()) }, duration: K1_END, ease: 'power1.in' },
-    0
-  );
-  tl.fromTo(wordmark, { opacity: 1 }, { opacity: 0, duration: K1_END * 0.7 }, 0);
+  /* 1-3 -> 1-4: zoom in on the B, video through the strokes. */
+  tl.to(state, { m: 3, duration: 0.7 }, 1.0);
 
-  tl.fromTo(
-    [markGroup, maskGroup],
-    { attr: { transform: () => transformFor(MARK_BBOX, toPx(K0)) } },
-    { attr: { transform: () => transformFor(MARK_BBOX, toPx(K1)) }, duration: K1_END },
-    0
-  );
-
-  /* --- K1 -> K2: 0.5 -> 1.0 — mark keeps growing (frame 1-3); solid fill
-         starts crossfading to the masked video. --- */
-
-  const K2_END = 1.0;
-  const k1k2Dur = K2_END - K1_END;
-
-  tl.fromTo(
-    [markGroup, maskGroup],
-    { attr: { transform: () => transformFor(MARK_BBOX, toPx(K1)) } },
-    { attr: { transform: () => transformFor(MARK_BBOX, toPx(K2)) }, duration: k1k2Dur },
-    K1_END
-  );
-
-  /* Mark stays visible (white/solid) through Phases 2-3; video appears inside
-     via mask. Only fades out in Phase 4. */
-  /* No mark opacity change here — keep at 1 through K3 */
-  tl.to(videoWrap, { opacity: 1, duration: k1k2Dur }, K1_END);
-
-  /* --- K2 -> K3: 1.0 -> 1.7 — Phase 3: mark grows to full coverage;
-         video-via-mask expands; background stays solid #B0C2C4 outside the
-         shape's silhouette. Once the mask extends past the viewport edges,
-         the masked layer is frozen as the permanent hero backdrop. --- */
-
-  const K3_END = 1.7;
-  const k2k3Dur = K3_END - K2_END;
-
-  tl.fromTo(
-    [markGroup, maskGroup],
-    { attr: { transform: () => transformFor(MARK_BBOX, toPx(K2)) } },
-    { attr: { transform: () => transformFor(MARK_BBOX, k3RectPx()) }, duration: k2k3Dur },
-    K2_END
-  );
-
-  /* Background stays solid #B0C2C4 throughout Phase 3 — fade removed from
-     this segment and rescheduled to Phase 4 (K3->K5). */
-
-  /* --- K3 -> K5: 1.7 -> 2.5 — Phase 4: B+sunburst (now frozen/invisible)
-         fades out completely; background crossfades from solid #B0C2C4 to
-         the full-bleed video. Nav (with its own small logo) and content
-         slide in and fade. Mark stays at opacity 0 (not visible; nav has
-         its own separate small logo). --- */
-
-  /* Phase 4: Mark fades out completely, background crossfades to video. */
-  tl.to(mark, { opacity: 0, duration: 0.4, ease: 'power2.in' }, K3_END + 0.05);
-
-  /* Background crossfades from #B0C2C4 to transparent, revealing the frozen
-     video backdrop that now fills the entire viewport. */
-  tl.to(bg, { opacity: 0, duration: 0.35, ease: 'power2.in' }, K3_END + 0.15);
+  /* 1-4 -> 1-5: stone dissolves to the full-bleed video; nav + content in. */
+  tl.to(state, { m: 4, duration: 0.4, ease: 'power2.in' }, 1.7);
+  tl.to(canvas, { autoAlpha: 0, duration: 0.35, ease: 'power2.in' }, 1.75);
+  tl.to(shade, { opacity: 1, duration: 0.35 }, 1.85);
 
   tl.fromTo(
     nav,
     { top: navStartTop + '%', opacity: 0, filter: BLUR_IN },
-    {
-      top: navEndTop + '%',
-      opacity: 1,
-      filter: BLUR_OUT,
-      duration: 0.25,
-      ease: 'power2.out',
-    },
+    { top: navEndTop + '%', opacity: 1, filter: BLUR_OUT, duration: 0.25, ease: 'power2.out' },
     2.0
   );
-
+  tl.fromTo(
+    navLogo,
+    { opacity: 0, filter: BLUR_IN },
+    { opacity: 1, filter: BLUR_OUT, duration: 0.25, ease: 'power2.out' },
+    2.0
+  );
   tl.fromTo(
     content,
     { top: contentStartTop + '%', opacity: 0, filter: BLUR_IN },
-    {
-      top: contentEndTop + '%',
-      opacity: 1,
-      filter: BLUR_OUT,
-      duration: 0.3,
-      ease: 'power3.out',
-    },
+    { top: contentEndTop + '%', opacity: 1, filter: BLUR_OUT, duration: 0.3, ease: 'power3.out' },
     2.05
   );
-
-  // CTAs stagger in last, landing exactly at 2.5 — end of the scrubbed range.
   tl.fromTo(
     ctas,
     { y: 42, opacity: 0, filter: BLUR_IN },
-    {
-      y: 0,
-      opacity: 1,
-      filter: BLUR_OUT,
-      duration: 0.15,
-      stagger: 0.1,
-      ease: 'power2.out',
-    },
+    { y: 0, opacity: 1, filter: BLUR_OUT, duration: 0.15, stagger: 0.1, ease: 'power2.out' },
     2.25
   );
-
-  // Nothing is scheduled between 2.5 and HOLD_END (3.2) — the 700px hold.
-
-  if (video) video.play().catch(() => {});
 }
 
 /* --------------------------- Segments A / B / C — "2026 in figures" -- */
@@ -687,8 +611,8 @@ function addProduct(tl, reduceMotion) {
   // Tablet is centred by GSAP so it owns its whole transform stack.
   gsap.set(tablet, { xPercent: -50, yPercent: -50 });
 
-  const tabletStartY = () =>
-    window.innerHeight / 2 + tablet.offsetHeight / 2 + 40;
+  // Not offsetHeight: it reads 0 before the image loads, parking the tablet on screen.
+  const tabletStartY = () => window.innerHeight + 40;
   // Design centres the tablet at 550px on the 1055px frame — 22px below the
   // viewport's own centre line.
   const tabletRestY = () => 0.0213 * window.innerHeight;
