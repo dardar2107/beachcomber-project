@@ -178,13 +178,22 @@ function initScene() {
  * off-screen); the raw attribute form has no such ambiguity.
  */
 function transformFor(rawBBox, targetPx) {
+  if (!targetPx || !rawBBox || targetPx.w <= 0 || targetPx.h <= 0) {
+    return 'translate(0 0) scale(1)';
+  }
   const scale = Math.min(targetPx.w / rawBBox.w, targetPx.h / rawBBox.h);
+  if (!Number.isFinite(scale)) return 'translate(0 0) scale(1)';
+
   const renderedW = rawBBox.w * scale;
   const renderedH = rawBBox.h * scale;
   const offsetX = targetPx.x + (targetPx.w - renderedW) / 2;
   const offsetY = targetPx.y + (targetPx.h - renderedH) / 2;
   const tx = offsetX - rawBBox.x * scale;
   const ty = offsetY - rawBBox.y * scale;
+
+  if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
+    return 'translate(0 0) scale(1)';
+  }
   return `translate(${tx} ${ty}) scale(${scale})`;
 }
 
@@ -297,6 +306,12 @@ function addHero(tl, reduceMotion) {
     const r = lockupRestRectPx();
     return { ...r, y: r.y + (WORDMARK_DROP_PCT / 100) * window.innerHeight };
   };
+
+  // Ensure maskGroup has valid initial transform to prevent NaN errors
+  const k0Transform = transformFor(MARK_BBOX, toPx(K0));
+  if (k0Transform) {
+    maskGroup.setAttribute('transform', k0Transform);
+  }
 
   tl.set(wordmarkGroup, {
     attr: { transform: () => transformFor(LOCKUP_BBOX, lockupRestRectPx()) },
