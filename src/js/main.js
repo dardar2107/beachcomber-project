@@ -1106,11 +1106,11 @@ function addArtisans(tl, reduceMotion) {
   const pieces = [collage].concat(content ? Array.from(content.children) : []);
 
   /*
-   * Measured from the real track width rather than the 1920 canvas constant,
-   * so the hijack still ends flush when the layout reflows on tablet/mobile.
+   * The track's own layout width (the 3935-unit canvas), not scrollWidth: the
+   * second B hangs past the canvas edge and would overshoot the end by ~268px.
    */
   const artisansTravel = () =>
-    -Math.max(0, track.scrollWidth - window.innerWidth);
+    -Math.max(0, track.offsetWidth - window.innerWidth);
 
   if (reduceMotion) {
     gsap.set(bg, { clipPath: 'inset(0% 0% 0% 0%)' });
@@ -1138,7 +1138,6 @@ function addArtisans(tl, reduceMotion) {
       clipPath: 'inset(0% 0% 0% 0%)',
       duration: a1.duration,
       ease: 'power2.inOut',
-      immediateRender: false,
     },
     a1.at
   );
@@ -1153,7 +1152,6 @@ function addArtisans(tl, reduceMotion) {
       x: 0,
       duration: a2.duration,
       ease: 'power2.out',
-      immediateRender: false,
     },
     a2.at
   );
@@ -1215,8 +1213,8 @@ function addArtisans(tl, reduceMotion) {
    * 3935px canvas.
    */
   const enterAt = (leftPx) => {
-    const total = Math.max(track.scrollWidth - window.innerWidth, 1);
-    const px = (leftPx / 3935) * track.scrollWidth; // same fraction of canvas
+    const total = Math.max(track.offsetWidth - window.innerWidth, 1);
+    const px = (leftPx / 3935) * track.offsetWidth; // same fraction of canvas
     return (
       scrollAt +
       S6_SCROLL *
@@ -1233,9 +1231,8 @@ function addArtisans(tl, reduceMotion) {
       y: 0,
       duration: S6_SCROLL * 0.2,
       ease: 'power2.out',
-      immediateRender: false,
     },
-    enterAt(2915)
+    enterAt(2885)
   );
 
   // Gallery photos resolve out of a soft blur as each scrolls in.
@@ -1344,25 +1341,12 @@ function initFooter() {
   const panel = footer.querySelector('[data-footer-panel]');
   const top = footer.querySelector('[data-footer-top]');
 
-  // Reveal order: logo, mission + badge, the columns left to right, the
-  // closing headline, then the legal row.
-  const pieces = [
-    footer.querySelector('.footer__logo'),
-    footer.querySelector('.footer__mission'),
-    footer.querySelector('.footer__badge'),
-    footer.querySelector('.footer__col--group'),
-    footer.querySelector('.footer__col--responsible'),
-    footer.querySelector('.footer__col--artisans'),
-    footer.querySelector('.footer__col--investors'),
-    footer.querySelector('.footer__col--location'),
-    footer.querySelector('.footer__col--contact'),
-    footer.querySelector('.footer__col--social'),
-    footer.querySelector('.footer__top'),
-    footer.querySelector('.footer__closing'),
-    footer.querySelector('.footer__legal--copy'),
-    footer.querySelector('.footer__legal--links'),
-    footer.querySelector('.footer__legal--site'),
-  ].filter(Boolean);
+  // Reveal in document order: newsletter, navigation, badge, back to top, legal row.
+  const pieces = Array.from(footer.querySelectorAll('[data-fx]'));
+
+  // No subscription endpoint yet: keep the form from navigating.
+  const signup = footer.querySelector('[data-footer-signup]');
+  if (signup) signup.addEventListener('submit', (e) => e.preventDefault());
 
   /*
    * Back to top plays a navy curtain: it wipes up over the page, the scroll

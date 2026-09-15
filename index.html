@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -309,68 +309,56 @@
             </div>
           </div>
 
-          <!-- Stage 6 — Our Artisans, horizontal scroll (3935px canvas) -->
+          <!-- Stage 6 — Our Artisans (frame 9-1), horizontal scroll on a 3935x920 canvas -->
           <div class="artisans" data-artisans>
             <div class="artisans__bg" data-artisans-bg></div>
 
             <div class="artisans__track" data-artisans-track>
-              <!-- Sits under the ambient B shapes, per the Figma layer order. -->
               <div class="artisans__collage" data-artisans-collage>
-                <img src="/assets/artisans01.jpg" alt="Beachcomber artisans at work" />
+                <img src="/assets/artisans_bg.jpg" alt="Beachcomber artisans at work" />
               </div>
 
-              <div class="artisans__vec artisans__vec--1"></div>
-              <div class="artisans__vec artisans__vec--2"></div>
+              <!-- The B.svg glyph (#pillarsB), cut in cream over the photo and faintly over the page. -->
+              <svg class="artisans__vec artisans__vec--1" aria-hidden="true" focusable="false"><use href="#pillarsB" /></svg>
+              <svg class="artisans__vec artisans__vec--2" aria-hidden="true" focusable="false"><use href="#pillarsB" /></svg>
 
               <div class="artisans__content" data-artisans-content>
-              <p class="artisans__eyebrow">Our Artisans</p>
-              <h2 class="artisans__headline">Feel the happiness you give</h2>
-              <div class="artisans__body">
-                <p>
-                  <strong>Hospitality starts with people.</strong> At Beachcomber, our
-                  Artisans bring skills, passion, and personality to every Guest
-                  Experience, shaping our Group’s culture.
+                <p class="artisans__eyebrow">Our Artisans</p>
+                <h2 class="artisans__headline">Feel the happiness you give</h2>
+                <div class="artisans__body">
+                  <p>
+                    <strong>Hospitality starts with people.</strong> At Beachcomber, our Artisans
+                    bring skills, passion, and personality to every Guest Experience, shaping our
+                    Group’s culture.
+                  </p>
+                  <p>
+                    We believe careers grow through opportunity, learning, and purpose. Whether new
+                    or experienced, our Artisans can develop talents and contribute meaningfully.
+                  </p>
+                </div>
+
+                <p class="artisans__stat artisans__stat--1" data-count="5000" data-prefix="+">+5,000</p>
+                <p class="artisans__label artisans__label--1">Artisans worldwide</p>
+                <p class="artisans__stat artisans__stat--2" data-count="85" data-suffix="%">85%</p>
+                <p class="artisans__label artisans__label--2">Sustainable Engagement Index</p>
+
+                <a class="btn-flat btn-flat--gold btn-flat--sm artisans__cta--1" href="#artisan-stories"><span>Our Artisan stories</span></a>
+
+                <div class="artisans__photo artisans__photo--1"><img src="/assets/artisans_photo1.jpg" alt="" /></div>
+                <div class="artisans__photo artisans__photo--2"><img src="/assets/artisans_photo2.jpg" alt="" /></div>
+                <div class="artisans__photo artisans__photo--3"><img src="/assets/artisans_photo3.jpg" alt="" /></div>
+
+                <h2 class="artisans__closing">Start your career with passion.</h2>
+                <p class="artisans__closing-body">
+                  Whether you are an experienced professional, a young graduate or a student taking
+                  your first steps into the world of work, discover the opportunities available
+                  across Beachcomber
                 </p>
-                <p>
-                  We believe careers grow through opportunity, learning, and purpose.
-                  Whether new or experienced, our Artisans can develop talents and
-                  contribute meaningfully.
-                </p>
-              </div>
-
-              <p
-                class="artisans__stat artisans__stat--1"
-                data-count="5000"
-                data-prefix="+"
-              >+5,000</p>
-              <p class="artisans__label artisans__label--1">Artisans worldwide</p>
-              <p
-                class="artisans__stat artisans__stat--2"
-                data-count="85"
-                data-suffix="%"
-              >85%</p>
-              <p class="artisans__label artisans__label--2">Sustainable Engagement Index</p>
-
-              <a class="btn-black artisans__cta--1" href="#artisan-stories">
-                Our Artisan stories
-              </a>
-
-              <img class="artisans__photo artisans__photo--1" src="/assets/artisans02.jpg" alt="" />
-              <img class="artisans__photo artisans__photo--2" src="/assets/artisans03.jpg" alt="" />
-              <img class="artisans__photo artisans__photo--3" src="/assets/artisans04.jpg" alt="" />
-
-              <h2 class="artisans__closing">Start your career with passion.</h2>
-              <p class="artisans__closing-body">
-                Whether you are an experienced professional, a young graduate or a
-                student taking your first steps into the world of work, discover the
-                opportunities available across Beachcomber
-              </p>
-              <a class="btn-black artisans__cta--2" href="#careers">
-                Build your career with us
-              </a>
+                <a class="btn-flat btn-flat--gold btn-flat--sm artisans__cta--2" href="#careers"><span>Build your career with us</span></a>
               </div>
             </div>
           </div>
+        </div>
       </section>
 
       <section class="news" data-news>
@@ -378,13 +366,15 @@
           <h2 class="news__title">Group news</h2>
           <div class="news__nav">
             <button class="news__arrow" data-news-prev type="button" aria-label="Previous">
-              <svg viewBox="0 0 22 10" aria-hidden="true">
-                <path d="M22 5H2M6.5 1 2 5l4.5 4" />
+              <svg viewBox="0 0 49.5 49.5" aria-hidden="true">
+                <circle cx="24.75" cy="24.75" r="24" />
+                <path d="M27.75 18.75 21.75 24.75 27.75 30.75" />
               </svg>
             </button>
             <button class="news__arrow" data-news-next type="button" aria-label="Next">
-              <svg viewBox="0 0 22 10" aria-hidden="true">
-                <path d="M0 5h20M15.5 1 20 5l-4.5 4" />
+              <svg viewBox="0 0 49.5 49.5" aria-hidden="true">
+                <circle cx="24.75" cy="24.75" r="24" />
+                <path d="M22.75 30.75 28.75 24.75 22.75 18.75" />
               </svg>
             </button>
           </div>
@@ -393,7 +383,7 @@
             <span class="news__progress-fill" data-news-progress></span>
           </div>
 
-          <a class="btn-black news__all" href="#all-news">View all news</a>
+          <a class="btn-flat btn-flat--dark news__all" href="#all-news"><span>View all news</span></a>
         </div>
 
         <div class="news__viewport" data-news-viewport>
@@ -401,49 +391,57 @@
             <article class="ncard" data-news-card>
               <a class="ncard__link" href="#news">
                 <div class="ncard__media">
-                  <img src="/assets/news01.jpg" alt="" />
+                  <img src="/assets/news_01.jpg" alt="" />
                   <span class="ncard__scrim"></span>
-                  <span class="ncard__tag">Group</span>
-                  <span class="ncard__date">12 Jun 2026</span>
+                  <div class="ncard__meta">
+                    <span class="ncard__tag">Financial</span>
+                    <span class="ncard__date">May 12, 2026</span>
+                  </div>
                 </div>
                 <span class="ncard__rule"></span>
-                <h3 class="ncard__title">NMH reports a resilient year across the Group’s resorts</h3>
+                <h3 class="ncard__title">Q3 and nine-month FY2026 results: NMH shows strong growth despite global volatility.</h3>
               </a>
             </article>
             <article class="ncard" data-news-card>
               <a class="ncard__link" href="#news">
                 <div class="ncard__media">
-                  <img src="/assets/news02.jpg" alt="" />
+                  <img src="/assets/news_02.jpg" alt="" />
                   <span class="ncard__scrim"></span>
-                  <span class="ncard__tag">Sustainability</span>
-                  <span class="ncard__date">28 May 2026</span>
+                  <div class="ncard__meta">
+                    <span class="ncard__tag">Events</span>
+                    <span class="ncard__date">November 12, 2025</span>
+                  </div>
                 </div>
                 <span class="ncard__rule"></span>
-                <h3 class="ncard__title">Coral restoration programme expands to three new lagoons</h3>
+                <h3 class="ncard__title">Mother’s Pause | A signature experience by Spa Dinarobin – The Art of Wellness</h3>
               </a>
             </article>
             <article class="ncard" data-news-card>
               <a class="ncard__link" href="#news">
                 <div class="ncard__media">
-                  <img src="/assets/news03.jpg" alt="" />
+                  <img src="/assets/news_03.jpg" alt="" />
                   <span class="ncard__scrim"></span>
-                  <span class="ncard__tag">People</span>
-                  <span class="ncard__date">14 May 2026</span>
+                  <div class="ncard__meta">
+                    <span class="ncard__tag">Events</span>
+                    <span class="ncard__date">May 7, 2026</span>
+                  </div>
                 </div>
                 <span class="ncard__rule"></span>
-                <h3 class="ncard__title">Beachcomber Academy welcomes its largest intake of Artisans</h3>
+                <h3 class="ncard__title">Beachcomber appoints Franck Lopez as Chief Operations Officer</h3>
               </a>
             </article>
             <article class="ncard" data-news-card>
               <a class="ncard__link" href="#news">
                 <div class="ncard__media">
-                  <img src="/assets/news04.jpg" alt="" />
+                  <img src="/assets/news_04.jpg" alt="" />
                   <span class="ncard__scrim"></span>
-                  <span class="ncard__tag">Awards</span>
-                  <span class="ncard__date">02 May 2026</span>
+                  <div class="ncard__meta">
+                    <span class="ncard__tag">Events</span>
+                    <span class="ncard__date">May 7, 2026</span>
+                  </div>
                 </div>
                 <span class="ncard__rule"></span>
-                <h3 class="ncard__title">Three properties recognised at the regional hospitality awards</h3>
+                <h3 class="ncard__title">Beachcomber Trail takes a break in 2025!</h3>
               </a>
             </article>
           </div>
@@ -453,95 +451,74 @@
       <footer class="footer" data-footer>
         <div class="footer__panel" data-footer-panel></div>
 
-        <div class="footer__brand">
-          <img class="footer__logo" data-fx src="/assets/logo-beachcomber.svg" alt="Beachcomber Resorts &amp; Hotels" />
-
-          <p class="footer__mission" data-fx>
-            <strong>A celebration of meaningful experiences</strong> - the vision,
-            the projects and the Artisans behind every Beachcomber resort across
-            the Indian Ocean.
-          </p>
-
-          <img class="footer__badge" data-fx src="/assets/earthcheck_logo.png" alt="EarthCheck certified" />
-        </div>
-
-        <div class="footer__colgroup footer__colgroup--1">
-        <nav class="footer__col footer__col--group" data-fx>
-          <h3>Group</h3>
-          <ul>
-            <li><a href="#philosophy">Our philosophy</a></li>
-            <li><a href="#board">Board of directors</a></li>
-            <li><a href="#leadership">Leadership</a></li>
-            <li><a href="#structure">Group structure</a></li>
-            <li><a href="#story">Our story</a></li>
-          </ul>
-        </nav>
-
-        <nav class="footer__col footer__col--responsible" data-fx>
-          <h3>Be Responsible</h3>
-          <ul>
-            <li><a href="#be-conscious">Be Conscious</a></li>
-            <li><a href="#be-caring">Be Caring</a></li>
-            <li><a href="#be-engaged">Be Engaged</a></li>
-          </ul>
-        </nav>
-
-        </div>
-
-        <div class="footer__colgroup footer__colgroup--2">
-        <nav class="footer__col footer__col--artisans" data-fx>
-          <h3>Artisans</h3>
-          <ul>
-            <li><a href="#happiness">Feel the Happiness You Give</a></li>
-            <li><a href="#meet">Meet our Artisans</a></li>
-            <li><a href="#we-offer">We offer</a></li>
-            <li><a href="#join">Join Beachcomber</a></li>
-            <li><a href="#life">Life at Beachcomber</a></li>
-          </ul>
-        </nav>
-
-        <nav class="footer__col footer__col--investors" data-fx>
-          <h3>Investors</h3>
-          <ul>
-            <li><a href="#governance">Policies and Governance</a></li>
-            <li><a href="#performance">Financial Performance</a></li>
-          </ul>
-        </nav>
-
-        </div>
-
-        <div class="footer__colgroup footer__colgroup--3">
-        <div class="footer__col footer__col--location" data-fx>
-          <h3>Location</h3>
-          <address>
-            BEACHCOMBER RESORTS &amp; HOTELS<br />
-            Beachcomber House<br />
-            Botanical Garden Street<br />
-            Curepipe 74213<br />
-            Mauritius
-          </address>
-        </div>
-
-        <div class="footer__col footer__col--contact" data-fx>
-          <h3>Contact</h3>
-          <ul>
-            <li><a href="tel:+2306019000">(+230) 601 9000 / (+230) 601 9090</a></li>
-            <li><a href="mailto:info@beachcomber.com">info@beachcomber.com</a></li>
-          </ul>
-        </div>
-
-        <div class="footer__col footer__col--social" data-fx>
-          <h3>Find us on</h3>
-          <div class="footer__social">
-            <a href="#facebook" aria-label="Facebook"><img src="/assets/facebook_icn.svg" alt="" /></a>
-            <a href="#x" aria-label="X"><img src="/assets/X_icn.svg" alt="" /></a>
-            <a href="#instagram" aria-label="Instagram"><img src="/assets/instagram_icn.svg" alt="" /></a>
-            <a href="#linkedin" aria-label="LinkedIn"><img src="/assets/linkedin_icn.svg" alt="" /></a>
+        <form class="footer__signup" data-footer-signup action="#" novalidate>
+          <p class="footer__signup-title" data-fx>Stay in touch with the <strong>latest news and exclusive offers.</strong></p>
+          <p class="footer__signup-note" data-fx>We encourage you to consult our <a href="#privacy">Data Privacy Policy</a></p>
+          <div class="footer__fields" data-fx>
+            <label class="footer__field">
+              <span class="sr-only">Full name</span>
+              <input type="text" name="name" placeholder="Full name" autocomplete="name" />
+            </label>
+            <label class="footer__field">
+              <span class="sr-only">Email</span>
+              <input type="email" name="email" placeholder="Email" autocomplete="email" />
+            </label>
           </div>
+          <label class="footer__consent" data-fx>
+            <input type="checkbox" name="consent" />
+            <span class="footer__radio" aria-hidden="true"></span>
+            <span class="footer__consent-text">I give my consent to Beachcomber Resorts &amp; Hotels to use my personal data for marketing purposes via my email, and agree to receive: News &amp; Updates / Special Offers / Exceptional Events</span>
+          </label>
+          <button class="footer__submit" type="submit" data-fx>
+            <span>Get updates</span>
+            <img src="/assets/arrow_long.svg" alt="" width="21" height="7" />
+          </button>
+        </form>
+
+        <div class="footer__nav">
+          <nav class="footer__links" aria-label="Footer" data-fx>
+            <a href="#group">Group</a>
+            <a href="#artisans">Artisans</a>
+            <a href="#be-responsible">Be Responsible</a>
+            <a href="#investors">Investors</a>
+          </nav>
+
+          <div class="footer__info">
+            <div class="footer__block" data-fx>
+              <h3>Contact</h3>
+              <a href="tel:+2306019000">(+230) 601 9000 / (+230) 601 9090</a>
+              <a href="mailto:info@beachcomber.com">info@beachcomber.com</a>
+            </div>
+            <div class="footer__block" data-fx>
+              <h3>Location</h3>
+              <address>
+                BEACHCOMBER RESORTS &amp; HOTELS<br />
+                Beachcomber House<br />
+                Botanical Garden Street<br />
+                Curepipe 74213<br />
+                Mauritius
+              </address>
+            </div>
+            <div class="footer__block" data-fx>
+              <h3>Find us on</h3>
+              <div class="footer__social">
+                <a href="#facebook" aria-label="Facebook"><img src="/assets/footer_facebook.svg" alt="" /></a>
+                <a href="#x" aria-label="X"><img src="/assets/footer_x.svg" alt="" /></a>
+                <a href="#instagram" aria-label="Instagram"><img src="/assets/footer_instagram.svg" alt="" /></a>
+                <a href="#linkedin" aria-label="LinkedIn"><img src="/assets/footer_linkedin.svg" alt="" /></a>
+              </div>
+            </div>
+          </div>
+
+          <img class="footer__badge" data-fx src="/assets/earthcheck_footer.png" alt="EarthCheck certified" />
         </div>
 
-        <button class="footer__top" data-footer-top data-fx type="button">Back to top</button>
-        </div>
+        <button class="footer__top" data-footer-top data-fx type="button">
+          <span>Back to top</span>
+          <img src="/assets/arrow_up.svg" alt="" width="11" height="9" />
+        </button>
+
+        <span class="footer__rule" data-fx aria-hidden="true"></span>
 
         <p class="footer__legal footer__legal--copy" data-fx>© 2026 New Mauritius Hotels Limited.</p>
         <ul class="footer__legal footer__legal--links" data-fx>
@@ -550,8 +527,6 @@
           <li><a href="#terms">Terms &amp; Conditions</a></li>
         </ul>
         <p class="footer__legal footer__legal--site" data-fx>Site by <strong>FRCI Ltd.</strong></p>
-
-        <p class="footer__closing" data-fx>A Mauritian hospitality story.</p>
       </footer>
 
       <!-- Navy curtain for the back-to-top transition. -->
