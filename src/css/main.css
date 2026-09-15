@@ -1122,7 +1122,9 @@ html.lenis body {
 
 .artisans__vec--2 {
   left: calc(150.2604 * var(--fu));
-  top: calc(-1587 * var(--fv));
+  /* Anchored by its visible lower edge (304 of 920), since its size follows the
+     width: a height-scaled top pushed almost all of it above the viewport. */
+  top: calc(304 * var(--fv) - 98.4896 * var(--fu)); /* 304 - 1891 */
   width: calc(68.6458 * var(--fu));
   fill: #f0eee5;
 }
