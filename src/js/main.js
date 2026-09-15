@@ -899,14 +899,10 @@ function addProduct(tl, reduceMotion) {
  * are shared elements that never move.
  */
 /*
- * Bottom-B placements per active pillar, as left % of the frame (frames 8-2,
- * 8-3, 8-4). Frame 8-4 only shows the large B, so the small one tucks inside it.
+ * pillars.svg left edge per active pillar, % of the frame: the large Figma B's
+ * left in frames 8-2 / 8-3 / 8-4 plus the 107px the band is cropped by.
  */
-const PILLAR_SHAPES = [
-  { sm: 3.6979, lg: -18.125 }, // Be Conscious
-  { sm: 34.6875, lg: 12.6042 }, // Be Caring
-  { sm: 69.1146, lg: 47.2917 }, // Be Engaged
-];
+const PILLAR_SHAPE_X = [-12.5521, 18.1771, 52.8646]; // Conscious, Caring, Engaged
 const PILLAR_HOVER_INTENT = 90; // ms a pointer must rest before a pillar takes over
 
 /* --- Hover / tap state: independent of the scroll timeline --- */
@@ -914,7 +910,7 @@ const PILLAR_HOVER_INTENT = 90; // ms a pointer must rest before a pillar takes 
 function initPillarsInteraction(root, reduceMotion) {
   const imgs = root.querySelectorAll('[data-pillars-img]');
   const bigb = root.querySelector('[data-pillars-bigb]');
-  const [shapeSm, shapeLg] = root.querySelectorAll('[data-pillars-shape]');
+  const shape = root.querySelector('[data-pillars-shape]');
   const head = root.querySelector('[data-pillars-head]');
   const labels = root.querySelectorAll('[data-pillar-label]');
   const details = root.querySelectorAll('[data-pillar-detail]');
@@ -923,14 +919,14 @@ function initPillarsInteraction(root, reduceMotion) {
   const EASE = 'power2.inOut';
   // 8-1 -> 8-2: headline 42.5% -> 17.07%, description 55.22% -> 29.83%.
   const headLift = () => -((42.5 - 17.07) / 100) * window.innerHeight;
-  // Parks the bottom Bs just below the edge (their visible band is <7vw).
+  // Parks the shape just below the edge (its band is 6.98vw tall).
   const shapeDrop = () => 0.1 * window.innerWidth;
 
   let active = -1;
   let pending = 0;
 
   gsap.set(details, { autoAlpha: 0, y: 16 });
-  gsap.set([shapeSm, shapeLg], { y: shapeDrop });
+  gsap.set(shape, { y: shapeDrop });
 
   const select = (i) => {
     if (i === active) return;
@@ -953,17 +949,15 @@ function initPillarsInteraction(root, reduceMotion) {
       })
     );
 
-    const pos = PILLAR_SHAPES[i];
+    const x = PILLAR_SHAPE_X[i] + '%';
     if (first) {
       gsap.to(head, { ...t, y: headLift });
       gsap.to(bigb, { ...t, opacity: 0, left: '-62%' });
       // First reveal rises from below the edge at the target position.
-      gsap.set(shapeSm, { left: pos.sm + '%', y: shapeDrop });
-      gsap.set(shapeLg, { left: pos.lg + '%', y: shapeDrop });
+      gsap.set(shape, { left: x, y: shapeDrop });
     }
-    // One tween per B carries both axes, so a fast retarget never strands a rise.
-    gsap.to(shapeSm, { ...t, left: pos.sm + '%', y: 0 });
-    gsap.to(shapeLg, { ...t, left: pos.lg + '%', y: 0 });
+    // One tween carries both axes, so a fast retarget never strands the rise.
+    gsap.to(shape, { ...t, left: x, y: 0 });
   };
 
   // Back to the generic 8-1 state, instantly — only ever called while the
@@ -979,7 +973,7 @@ function initPillarsInteraction(root, reduceMotion) {
     gsap.set(details, { ...s, autoAlpha: 0, y: 16 });
     gsap.set(head, { ...s, y: 0 });
     gsap.set(bigb, { ...s, opacity: 1, left: '-49.6354%' });
-    gsap.set([shapeSm, shapeLg], { ...s, y: shapeDrop });
+    gsap.set(shape, { ...s, y: shapeDrop });
   };
 
   labels.forEach((el, i) => {
@@ -1001,7 +995,7 @@ function initPillarsInteraction(root, reduceMotion) {
 
   ScrollTrigger.addEventListener('refresh', () => {
     if (active >= 0) gsap.set(head, { y: headLift() });
-    else gsap.set([shapeSm, shapeLg], { y: shapeDrop() });
+    else gsap.set(shape, { y: shapeDrop() });
   });
 
   return reset;
