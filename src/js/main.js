@@ -541,6 +541,27 @@ function addFigures(tl, reduceMotion) {
   }
 }
 
+// Glyph ink boxes inside the two mark SVGs (measured from the files).
+const B_SVG = { w: 7460, h: 8854, ink: { x: 2948, y: 4321, w: 1318, h: 1891 } };
+const NAUTILUS_SVG = { w: 3205, h: 3804, ink: { x: 1267, y: 1856, w: 566, h: 813 } };
+
+// Screen rect of the B.svg glyph as cropped in frame 4-1, through the dock's
+// xMidYMid-slice viewBox (373,-343 1766x2533 on the 1920x920 frame).
+function cropBRect() {
+  const d = dockRect();
+  const sc = Math.max(d.width / 897, d.height / 878);
+  const ox = d.left + (d.width - 897 * sc) / 2;
+  const oy = d.top + (d.height - 878 * sc) / 2;
+  return { x: ox + (373 - 1003) * sc, y: oy + (-343 - 21) * sc, w: 1766 * sc, h: 2533 * sc };
+}
+
+// Frame 5-1: the nautilus's own B at 68.67,94.23 (513.3x737.3) on 1920x920.
+function nautilusBRect() {
+  const s = window.innerHeight / 920;
+  const w = 513.31 * s;
+  return { x: 68.67 * (window.innerWidth / 1920), y: 94.23 * s, w, h: w * (813 / 566) };
+}
+
 /* ------------------- Stage 3 — achievements takeover, heading, holds -- */
 
 function addAchievements(tl, reduceMotion) {
@@ -552,123 +573,143 @@ function addAchievements(tl, reduceMotion) {
   const b = scope.querySelector('[data-figures-b]');
   const nautilus = scope.querySelector('[data-figures-nautilus]');
   const cream = scope.querySelector('[data-figures-cream]');
-  const media = scope.querySelector('[data-figures-dock]');
   const panel = scope.querySelector('[data-figures-panel]');
+  const cropPath = scope.querySelector('[data-figures-crop-path]');
+
+  // White at this opacity over --sky reads as frame 5-1's #a9c9d2 watermark.
+  const WATERMARK_OPACITY = 0.075;
+  const WATERMARK_TINT = '#a9c9d2';
+  const START_FILL = '#faf9f8'; // figures background — the crop B's own colour
 
   /*
-   * The two marks are registered on their own B glyphs, measured from the SVGs:
-   * B.svg's ink sits at 2948,4321 (1318x1891) in a 7460x8854 box; b-nautilus's
-   * at 1267,1856 (566x813) in 3205x3804. Solving both onto the design rect
-   * (112,150 -> 637,900 @ 1920x1055) gives these transforms. B.svg ends where
-   * the nautilus's B rests, and the nautilus starts where B.svg's B is now, so
-   * the glyphs coincide at both ends and stay aligned through the crossfade.
+   * b is sized to the glyph's ink box only (mask offset in px), so it stays a
+   * small layer even at its 4-1 size. The nautilus keeps its full box, based at
+   * its 5-1 rest, so it ends on the identity transform Stage 4 animates from.
    */
-  const B_END_SCALE = 0.3975;
-  const bEndX = () => -0.3439 * window.innerWidth;
-  const bEndY = () => 0.4797 * window.innerHeight;
+  const placeBoxes = () => {
+    const A = cropBRect();
+    const s = A.w / B_SVG.ink.w;
+    const maskSize = `${B_SVG.w * s}px ${B_SVG.h * s}px`;
+    const maskPos = `${-B_SVG.ink.x * s}px ${-B_SVG.ink.y * s}px`;
+    Object.assign(b.style, {
+      left: A.x + 'px',
+      top: A.y + 'px',
+      width: A.w + 'px',
+      height: A.h + 'px',
+      webkitMaskSize: maskSize,
+      maskSize,
+      webkitMaskPosition: maskPos,
+      maskPosition: maskPos,
+    });
 
-  const NAUTILUS_START_SCALE = 2.51;
-  const nautilusStartX = () => 0.3427 * window.innerWidth;
-  const nautilusStartY = () => -0.4794 * window.innerHeight;
+    const E = nautilusBRect();
+    const n = E.w / NAUTILUS_SVG.ink.w;
+    Object.assign(nautilus.style, {
+      left: E.x - NAUTILUS_SVG.ink.x * n + 'px',
+      top: E.y - NAUTILUS_SVG.ink.y * n + 'px',
+      width: NAUTILUS_SVG.w * n + 'px',
+      height: NAUTILUS_SVG.h * n + 'px',
+    });
+  };
 
-  const WATERMARK_OPACITY = 0.18;
+  // One shared path: size eases geometrically, centre linearly.
+  const morph = { t: 0 };
+  const render = () => {
+    const A = cropBRect();
+    const E = nautilusBRect();
+    const t = morph.t;
+    const w = A.w * Math.pow(E.w / A.w, t);
+    const cx = A.x + A.w / 2 + (E.x + E.w / 2 - (A.x + A.w / 2)) * t;
+    const cy = A.y + A.h / 2 + (E.y + E.h / 2 - (A.y + A.h / 2)) * t;
+
+    // b's box is centred on its glyph: plain translate + scale.
+    gsap.set(b, { x: cx - (A.x + A.w / 2), y: cy - (A.y + A.h / 2), scale: w / A.w });
+
+    // The nautilus scales about its box centre; keep its B on the same point.
+    const n = E.w / NAUTILUS_SVG.ink.w;
+    const c0x = E.x - NAUTILUS_SVG.ink.x * n + (NAUTILUS_SVG.w * n) / 2;
+    const c0y = E.y - NAUTILUS_SVG.ink.y * n + (NAUTILUS_SVG.h * n) / 2;
+    const S = w / E.w;
+    gsap.set(nautilus, {
+      scale: S,
+      x: cx - c0x - (E.x + E.w / 2 - c0x) * S,
+      y: cy - c0y - (E.y + E.h / 2 - c0y) * S,
+    });
+  };
+
+  placeBoxes();
+  ScrollTrigger.addEventListener('refresh', () => {
+    placeBoxes();
+    if (morph.t < 1) render();
+  });
 
   if (reduceMotion) {
     gsap.set(sky, { clipPath: 'inset(0% 0% 0% 0%)' });
     gsap.set(text, { opacity: 1, scale: 1, filter: BLUR_OUT });
     gsap.set(b, { opacity: 0 });
     gsap.set(nautilus, { scale: 1, x: 0, y: 0, opacity: WATERMARK_OPACITY });
-    gsap.set([cream, media, panel], { opacity: 0 });
+    gsap.set([cream, panel], { opacity: 0 });
     return;
   }
 
   gsap.set(text, { opacity: 0, scale: 0.95, filter: BLUR_IN });
-  gsap.set(b, { opacity: 0 });
+  gsap.set(b, { opacity: 0, backgroundColor: START_FILL });
+  gsap.set(nautilus, { opacity: 0 });
+  render();
 
-  /* --- Segment A: 6800 -> 7300. Nothing is scheduled — the final stat
-         holds static so it can actually be read. --- */
+  /* --- Segment A: 6800 -> 7300. Nothing scheduled — the final stat holds. --- */
 
   /* --- Segment B: 7300 -> 8500 --- */
 
   const takeover = STAGE2_END + S3_HOLD_A;
+  const MOVE_AT = takeover + S3_TAKEOVER * 0.08;
+  const MOVE = S3_TAKEOVER * 0.9;
 
-  const markMove = {
-    duration: S3_TAKEOVER * 0.85,
-    ease: 'power1.inOut',
-  };
-
-  // The blue wipes in from the right edge and expands left across the screen.
+  // The blue wipes in from the right and covers the video.
   tl.fromTo(
     sky,
     { clipPath: 'inset(0% 0% 0% 100%)' },
-    { clipPath: 'inset(0% 0% 0% 0%)', ...markMove },
+    { clipPath: 'inset(0% 0% 0% 0%)', duration: S3_TAKEOVER * 0.85, ease: 'power1.inOut' },
     takeover
   );
 
-  // B.svg travels to the nautilus's B and hands over to it.
-  tl.to(b, { opacity: 1, duration: S3_TAKEOVER * 0.15 }, takeover);
+  // Same glyph, same place, same colour: the crop B lifts off as a free B.
+  tl.fromTo(b, { opacity: 0 }, { opacity: 1, duration: 0.001 }, takeover);
+  tl.fromTo(cropPath, { opacity: 1 }, { opacity: 0, duration: 0.001 }, takeover);
+
+  tl.to(morph, { t: 1, duration: MOVE, ease: 'power2.inOut', onUpdate: render }, MOVE_AT);
   tl.to(
     b,
-    {
-      scale: B_END_SCALE,
-      x: bEndX,
-      y: bEndY,
-      backgroundColor: '#ffffff',
-      ...markMove,
-    },
-    takeover
+    { backgroundColor: WATERMARK_TINT, duration: MOVE * 0.55, ease: 'power1.inOut' },
+    MOVE_AT + MOVE * 0.1
   );
 
+  // Rays grow in around the travelling B, registered to it the whole way.
   tl.fromTo(
     nautilus,
-    {
-      scale: NAUTILUS_START_SCALE,
-      x: nautilusStartX,
-      y: nautilusStartY,
-      opacity: 0,
-    },
-    { scale: 1, x: 0, y: 0, opacity: WATERMARK_OPACITY, ...markMove },
-    takeover
+    { opacity: 0 },
+    { opacity: WATERMARK_OPACITY, duration: MOVE * 0.45, ease: 'power1.out' },
+    MOVE_AT + MOVE * 0.5
   );
+  // By now b's tint matches the watermark, so it dissolves into the nautilus B.
+  tl.to(b, { opacity: 0, duration: MOVE * 0.25, ease: 'power1.in' }, MOVE_AT + MOVE * 0.75);
 
-  // Crossfade sits inside the move, so the two marks swap while overlapped.
   tl.to(
-    b,
-    { opacity: 0, duration: S3_TAKEOVER * 0.5, ease: 'power1.inOut' },
-    takeover + S3_TAKEOVER * 0.25
+    panel,
+    { opacity: 0, duration: S3_TAKEOVER * 0.35, ease: 'power1.in' },
+    takeover + S3_TAKEOVER * 0.1
   );
+  tl.to(cream, { opacity: 0, duration: S3_TAKEOVER * 0.2 }, takeover + S3_TAKEOVER * 0.8);
 
-  // Figures and photo fade as the expansion swallows them.
-  tl.to(
-    [panel, media],
-    { opacity: 0, duration: S3_TAKEOVER * 0.5, ease: 'power1.in' },
-    takeover + S3_TAKEOVER * 0.18
-  );
-
-  // The cream goes last — it is the backstop that keeps the Stage 1 hero from
-  // showing through the corners the circle has not reached yet.
-  tl.to(
-    cream,
-    { opacity: 0, duration: S3_TAKEOVER * 0.2 },
-    takeover + S3_TAKEOVER * 0.8
-  );
-
-  /* --- Segment C: 8500 -> 9100, only once the takeover has finished --- */
+  /* --- Segment C: 8500 -> 9100 --- */
 
   tl.to(
     text,
-    {
-      opacity: 1,
-      scale: 1,
-      filter: BLUR_OUT,
-      duration: S3_TEXT * 0.8,
-      ease: 'power2.out',
-    },
+    { opacity: 1, scale: 1, filter: BLUR_OUT, duration: S3_TEXT * 0.8, ease: 'power2.out' },
     takeover + S3_TAKEOVER
   );
 
-  /* --- Segment D: 9100 -> 9600. Nothing scheduled; Stage 4 picks up at
-         9600, so the gap is internal and preserved. --- */
+  /* --- Segment D: 9100 -> 9600. Nothing scheduled; Stage 4 picks up at 9600. --- */
 }
 
 initScene();

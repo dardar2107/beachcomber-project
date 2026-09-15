@@ -625,16 +625,15 @@ html.lenis body {
   will-change: transform, opacity, filter;
 }
 
+/* Frame 5-1: Montserrat SemiBold 75/85, white. */
 .achievements__heading {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 400;
-  font-size: clamp(45px, calc(4.1667 * var(--u)), 80px); /* 80px @ 1920 */
-  line-height: 1.125;
-  max-width: calc(48.1771 * var(--u)); /* 925px @ 1920 */
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(36px, calc(3.9063 * var(--fu)), 75px);
+  line-height: 1.1333;
   letter-spacing: -0.03em;
   text-align: center;
-  color: var(--snow);
+  color: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {
