@@ -680,14 +680,15 @@ html.lenis body {
   will-change: transform, opacity, filter;
 }
 
+/* Frame 7-1: Montserrat SemiBold 60/70, -1.8px. */
 .product__title {
   margin-left: calc(0.625 * var(--u)); /* 12px @ 1920 */
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 400;
-  font-size: clamp(34px, calc(3.3854 * var(--u)), 65px); /* 65px @ 1920 */
-  line-height: 1.0648; /* 69.212px @ 65px */
-  letter-spacing: -0.02em;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(30px, calc(3.125 * var(--fu)), 60px); /* 60px @ 1920x920 */
+  line-height: 1.1667; /* 70px @ 60px */
+  letter-spacing: -0.03em;
+  color: #fff;
 }
 
 .product__intro {
