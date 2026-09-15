@@ -13,6 +13,10 @@ gsap.registerPlugin(ScrollTrigger);
  * easing toward the target every frame instead of running a fixed-length
  * tween per input, which is what gives the heavier, continuous glide.
  */
+// Per-event gate on Lenis's wheel/touch input; the figures section swaps it in
+// so gestures inside its stepped range move one stop instead of scrolling.
+let scrollInputGate = () => true;
+
 const lenis = new Lenis({
   autoRaf: false,
   lerp: 0.07,
@@ -20,6 +24,7 @@ const lenis = new Lenis({
   touchMultiplier: 1.6,
   smoothWheel: true,
   syncTouch: true,
+  virtualScroll: (data) => scrollInputGate(data),
 });
 
 lenis.on('scroll', ScrollTrigger.update);
@@ -83,11 +88,11 @@ const MARKERS = DEV && new URLSearchParams(window.location.search).has('markers'
  */
 const HOLD_END = 3.2;
 const SEG_A = 1.2;
-const SEG_B = 0.8;
+const SEG_B = 0.05; // the first swap starts as the pin engages (stepped, no idle scroll)
 const SEG_C = 0.8;
-const STAGE2_END = HOLD_END + SEG_A + SEG_B + SEG_C * 2; // 6.8
+const STAGE2_END = HOLD_END + SEG_A + SEG_B + SEG_C * 2; // 6.05
 
-const S3_HOLD_A = 0.5;
+const S3_HOLD_A = 0.05; // blue wipe follows the last figure straight away
 const S3_TAKEOVER = 1.2;
 const S3_TEXT = 0.6;
 const S3_HOLD_D = 0.5;
@@ -128,6 +133,150 @@ const STAGE2_ONLY = DEV ? new URLSearchParams(window.location.search).get('stage
 // Every fade-in resolves out of a soft blur rather than plain opacity.
 const BLUR_IN = 'blur(8px)';
 const BLUR_OUT = 'blur(0px)';
+
+/* ------------------------------ Stage 2/3 — one gesture, one figure -- */
+
+/*
+ * Inside the pinned figures range, a wheel/touch gesture or key press moves to
+ * the next stop on a locked glide, so the scroll-linked animation always plays
+ * out fully and the reader never rests between two figures. Stops are
+ * pin-relative px on the shifted figures clock: Group revenue, Total assets,
+ * Profit after tax, and the Stage 3 heading fully in. Past either end the page
+ * scrolls normally.
+ */
+const FIG_STOPS = [0, 850, 1650, 3900];
+const FIG_STEP_DURATIONS = [0.9, 0.9, 2.2]; // per segment between stops
+const STEP_GESTURE_GAP = 180; // ms of quiet before a new wheel/touch gesture counts
+const STEP_EPS = 4;
+
+function initFigureSteps(trigger) {
+  const stops = () => FIG_STOPS.map((s) => trigger.start + s);
+  const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  let busy = false;
+  let lastInput = -Infinity;
+
+  const glide = (to, duration) => {
+    busy = true;
+    lenis.scrollTo(to, {
+      duration,
+      easing: easeInOut,
+      lock: true,
+      force: true,
+      onComplete: () => {
+        busy = false;
+        lastInput = performance.now();
+      },
+    });
+  };
+
+  // One stop in `dir`. Returns false when the position is outside the stepped
+  // range for that direction (the page should scroll normally).
+  const step = (dir) => {
+    const s = stops();
+    const first = s[0];
+    const last = s[s.length - 1];
+    const y = lenis.scroll;
+
+    if (dir > 0) {
+      if (y < first - STEP_EPS || y >= last - STEP_EPS) return false;
+      const j = s.findIndex((v) => v > y + STEP_EPS);
+      glide(s[j], FIG_STEP_DURATIONS[j - 1]);
+    } else {
+      if (y > last + STEP_EPS || y <= first + STEP_EPS) return false;
+      let j = 0;
+      for (let k = s.length - 1; k >= 0; k -= 1) {
+        if (s[k] < y - STEP_EPS) {
+          j = k;
+          break;
+        }
+      }
+      glide(s[j], FIG_STEP_DURATIONS[j]);
+    }
+    return true;
+  };
+
+  scrollInputGate = ({ deltaY }) => {
+    if (!deltaY) return true;
+    const now = performance.now();
+    const fresh = now - lastInput > STEP_GESTURE_GAP;
+    lastInput = now;
+    if (busy) return false;
+
+    const dir = Math.sign(deltaY);
+    const s = stops();
+    const first = s[0];
+    const last = s[s.length - 1];
+    const y = lenis.scroll;
+
+    // A flick that would carry past an end of the range lands on that end.
+    const target = lenis.targetScroll + deltaY;
+    if (dir > 0 && y < first - STEP_EPS && target > first + STEP_EPS) {
+      glide(first, 0.6);
+      return false;
+    }
+    if (dir < 0 && y > last + STEP_EPS && target < last - STEP_EPS) {
+      glide(last, 0.6);
+      return false;
+    }
+
+    const inRange =
+      dir > 0 ? y >= first - STEP_EPS && y < last - STEP_EPS : y <= last + STEP_EPS && y > first + STEP_EPS;
+    if (!inRange) return true;
+    if (fresh) step(dir);
+    return false;
+  };
+
+  // Momentum already under way when the range is reached stops at its edge,
+  // and any other way of landing between stops (scrollbar drag, jump) settles
+  // on the nearest one.
+  let prevY = lenis.scroll;
+  let settleTimer = 0;
+  lenis.on('scroll', ({ scroll }) => {
+    const s = stops();
+    const first = s[0];
+    const last = s[s.length - 1];
+    if (!busy) {
+      if (prevY < first - STEP_EPS && scroll > first + STEP_EPS && scroll < last) {
+        lenis.scrollTo(first, { immediate: true, force: true });
+        scroll = first;
+      } else if (prevY > last + STEP_EPS && scroll < last - STEP_EPS && scroll > first) {
+        lenis.scrollTo(last, { immediate: true, force: true });
+        scroll = last;
+      }
+    }
+    prevY = scroll;
+
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      if (busy) return;
+      const y = lenis.scroll;
+      if (y <= first + STEP_EPS || y >= last - STEP_EPS) return;
+      if (s.some((v) => Math.abs(v - y) <= STEP_EPS)) return;
+      const nearest = s.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
+      glide(nearest, 0.5);
+    }, 160);
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    const space = e.key === ' ';
+    if (space && t && /^(BUTTON|A)$/.test(t.tagName)) return;
+    const down = e.key === 'ArrowDown' || e.key === 'PageDown' || (space && !e.shiftKey);
+    const up = e.key === 'ArrowUp' || e.key === 'PageUp' || (space && e.shiftKey);
+    if (!down && !up) return;
+
+    const s = stops();
+    const y = lenis.scroll;
+    if (busy) {
+      if (y >= s[0] - STEP_EPS && y <= s[s.length - 1] + STEP_EPS) e.preventDefault();
+      return;
+    }
+    if (step(down ? 1 : -1)) e.preventDefault();
+  });
+}
 
 function initScene() {
   const hero = document.querySelector('[data-hero]');
@@ -173,6 +322,7 @@ function initScene() {
       markers: MARKERS,
     },
   });
+  if (figTl.scrollTrigger && !reduceMotion) initFigureSteps(figTl.scrollTrigger);
   addFigures(figTl, reduceMotion);
   addAchievements(figTl, reduceMotion);
   addProduct(figTl, reduceMotion);
@@ -535,7 +685,7 @@ function addFigures(tl, reduceMotion) {
     // Offset and longer than the text swap, so the crop reads as a secondary move.
     tl.to(
       cropPath,
-      { attr: { transform: CROP_PER_STAT[i] }, duration: SEG_C * 0.95, ease: 'sine.inOut' },
+      { attr: { transform: CROP_PER_STAT[i] }, duration: SEG_C * 0.85, ease: 'sine.inOut' },
       at + 0.12
     );
   }
