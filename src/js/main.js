@@ -1009,7 +1009,9 @@ function addPillars(tl, reduceMotion) {
     return;
   }
 
-  gsap.set([bigbWrap, intro, ...pillars], { opacity: 0 });
+  // Reveal tweens render their hidden start state at build time. With
+  // immediateRender:false a refresh or restored scroll position left the layer
+  // visible over the earlier stages.
 
   const entry = STAGE4_END;
 
@@ -1020,19 +1022,19 @@ function addPillars(tl, reduceMotion) {
   tl.fromTo(
     root,
     { autoAlpha: 0 },
-    { autoAlpha: 1, duration: 0.001, immediateRender: false },
+    { autoAlpha: 1, duration: 0.001 },
     entry + 0.1
   );
   tl.fromTo(
     media,
     { clipPath: 'inset(100% 0% 0% 0%)' },
-    { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.55, ease: 'power2.inOut', immediateRender: false },
+    { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.55, ease: 'power2.inOut' },
     entry + 0.1
   );
   tl.fromTo(
     imgsWrap,
     { scale: 1.1 },
-    { scale: 1, duration: 0.9, ease: 'power2.out', immediateRender: false },
+    { scale: 1, duration: 0.9, ease: 'power2.out' },
     entry + 0.1
   );
 
@@ -1040,14 +1042,14 @@ function addPillars(tl, reduceMotion) {
   tl.fromTo(
     bigbWrap,
     { opacity: 0, left: '-10%' },
-    { opacity: 1, left: '0%', duration: 0.5, ease: 'power2.out', immediateRender: false },
+    { opacity: 1, left: '0%', duration: 0.5, ease: 'power2.out' },
     entry + 0.4
   );
 
   tl.fromTo(
     intro,
     { opacity: 0, y: 40, filter: BLUR_IN },
-    { opacity: 1, y: 0, filter: BLUR_OUT, duration: 0.45, ease: 'power2.out', immediateRender: false },
+    { opacity: 1, y: 0, filter: BLUR_OUT, duration: 0.45, ease: 'power2.out' },
     entry + 0.45
   );
 
@@ -1055,7 +1057,7 @@ function addPillars(tl, reduceMotion) {
   tl.fromTo(
     pillars,
     { opacity: 0, top: '4%' },
-    { opacity: 1, top: '0%', duration: 0.4, stagger: 0.08, ease: 'power2.out', immediateRender: false },
+    { opacity: 1, top: '0%', duration: 0.4, stagger: 0.08, ease: 'power2.out' },
     entry + 0.6
   );
 
