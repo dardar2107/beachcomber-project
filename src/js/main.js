@@ -119,9 +119,11 @@ const ARTISANS_TRAVEL_VW = -104.9479; // -2015px @ 1920
 
 const STAGE6_END = STAGE5_END_T + S6_ENTRY + S6_SCROLL;
 
-const SCENE_SCROLL = STAGE6_END * 1000; // 22440px
+// Part B's timeline starts here on the original stage clock (shifted to 0).
+const FIG_START = HOLD_END + SEG_A; // 4.4
 
-const FIGURE_STEP_VW = 15.2604; // 293px on the 1920 canvas
+// Dev-only: `?stage2=a` runs only the dock, `?stage2=b` only the pinned figures.
+const STAGE2_ONLY = DEV ? new URLSearchParams(window.location.search).get('stage2') : null;
 
 // Every fade-in resolves out of a soft blur rather than plain opacity.
 const BLUR_IN = 'blur(8px)';
@@ -129,16 +131,18 @@ const BLUR_OUT = 'blur(0px)';
 
 function initScene() {
   const hero = document.querySelector('[data-hero]');
-  if (!hero) return;
+  const figures = document.querySelector('[data-figures]');
+  if (!hero || !figures) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const tl = gsap.timeline({
+  const heroTl = gsap.timeline({
     defaults: { ease: 'none' },
     scrollTrigger: {
+      id: 'stage1',
       trigger: hero,
       start: 'top top',
-      end: '+=' + SCENE_SCROLL,
+      end: '+=' + HOLD_END * 1000,
       pin: true,
       scrub: 0.6,
       anticipatePin: 1,
@@ -146,13 +150,36 @@ function initScene() {
       markers: MARKERS,
     },
   });
+  addHero(heroTl, reduceMotion);
+  heroTl.to({}, { duration: 0.001 }, HOLD_END - 0.001);
 
-  addHero(tl, reduceMotion);
-  addFigures(tl, reduceMotion);
-  addAchievements(tl, reduceMotion);
-  addProduct(tl, reduceMotion);
-  addPillars(tl, reduceMotion);
-  addArtisans(tl, reduceMotion);
+  // Part A — plain scrubbed scroll, no pin.
+  addDock(hero, figures, reduceMotion || STAGE2_ONLY === 'b');
+
+  // Part B — pinned; stats cycle, then Stages 3-6 run on the same pin.
+  // In `?stage2=a` the timeline is still built (initial states) but never scrubbed.
+  const figTl = gsap.timeline({
+    defaults: { ease: 'none' },
+    paused: STAGE2_ONLY === 'a',
+    scrollTrigger: STAGE2_ONLY === 'a' ? undefined : {
+      id: 'figures',
+      trigger: figures,
+      start: 'top top',
+      end: '+=' + (STAGE6_END - FIG_START) * 1000,
+      pin: true,
+      scrub: 0.6,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      markers: MARKERS,
+    },
+  });
+  addFigures(figTl, reduceMotion);
+  addAchievements(figTl, reduceMotion);
+  addProduct(figTl, reduceMotion);
+  addPillars(figTl, reduceMotion);
+  addArtisans(figTl, reduceMotion);
+  figTl.to({}, { duration: 0.001 }, STAGE6_END - 0.001);
+  figTl.shiftChildren(-FIG_START);
 }
 
 /*
@@ -218,8 +245,6 @@ function addHero(tl, reduceMotion) {
 
   const navEndTop = 8.198;
   const navStartTop = -24.17;
-  const contentEndTop = 45.96;
-  const contentStartTop = 124.79;
 
   if (video) {
     const play = () => video.paused && video.play().catch(() => {});
@@ -233,7 +258,7 @@ function addHero(tl, reduceMotion) {
     gsap.set(canvas, { autoAlpha: 0 });
     gsap.set([shade, navLogo], { opacity: 1 });
     gsap.set(nav, { top: navEndTop + '%', opacity: 1 });
-    gsap.set(content, { top: contentEndTop + '%', opacity: 1 });
+    gsap.set(content, { y: 0, opacity: 1 });
     gsap.set(ctas, { y: 0, opacity: 1, filter: BLUR_OUT });
     return;
   }
@@ -355,8 +380,8 @@ function addHero(tl, reduceMotion) {
   );
   tl.fromTo(
     content,
-    { top: contentStartTop + '%', opacity: 0, filter: BLUR_IN },
-    { top: contentEndTop + '%', opacity: 1, filter: BLUR_OUT, duration: 0.3, ease: 'power3.out' },
+    { y: () => window.innerHeight * 0.5, opacity: 0, filter: BLUR_IN },
+    { y: 0, opacity: 1, filter: BLUR_OUT, duration: 0.3, ease: 'power3.out' },
     2.05
   );
   tl.fromTo(
@@ -369,91 +394,141 @@ function addHero(tl, reduceMotion) {
 
 /* --------------------------- Segments A / B / C — "2026 in figures" -- */
 
-function addFigures(tl, reduceMotion) {
-  const scope = document.querySelector('[data-figures]');
-  if (!scope) return;
+/*
+ * Frame 2-1 dock rect: 897x878 at 1003,21 on a 1920x920 canvas — kept 20px off
+ * the right edge and 21px off top and bottom at any viewport.
+ */
+function dockRect() {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const k = Math.min(W / 1920, H / 920);
+  const width = 897 * k;
+  const height = Math.min(H - 42 * k, width * (878 / 897));
+  return { left: W - 20 * k - width, top: (H - height) / 2, width, height };
+}
 
-  const cream = scope.querySelector('[data-figures-cream]');
-  const bwrap = scope.querySelector('[data-figures-bwrap]');
-  const media = scope.querySelector('[data-figures-media]');
-  const panel = scope.querySelector('[data-figures-panel]');
-  const track = scope.querySelector('[data-figures-track]');
-  const photoTrack = scope.querySelector('[data-figures-phototrack]');
-  const photos = scope.querySelectorAll('[data-figures-photo]');
+const DOCK_EASE = gsap.parseEase('power2.inOut');
 
-  const step = () => (FIGURE_STEP_VW / 100) * window.innerWidth;
-  const photoStep = () => window.innerHeight;
+function syncVideo(from, to) {
+  if (!from || !to) return;
+  try {
+    to.currentTime = from.currentTime;
+  } catch (e) {
+    /* not seekable yet */
+  }
+  to.play().catch(() => {});
+}
 
-  if (reduceMotion) {
-    gsap.set([cream, bwrap], { clipPath: 'inset(0% 0% 0% 0%)' });
-    gsap.set([media, panel], { opacity: 1, y: 0, filter: BLUR_OUT });
-    gsap.set(photoTrack, { y: () => -photoStep() * (photos.length - 1) });
-    gsap.set(track, { y: () => -step() * (photos.length - 1) });
+/* --- Part A: 0 -> 100vh of normal scroll as the section rises into view --- */
+
+function addDock(hero, figures, staticDock) {
+  const dock = figures.querySelector('[data-figures-dock]');
+  const dockVideo = figures.querySelector('[data-figures-dockvideo]');
+  const shade = figures.querySelector('[data-figures-dockshade]');
+  const crop = figures.querySelector('[data-figures-crop]');
+  const reveals = figures.querySelectorAll('[data-figures-reveal]');
+  const heroVideo = hero.querySelector('.hero__video');
+
+  /*
+   * The rect is interpolated in screen space, then converted back to section
+   * space by undoing how far the section still sits below the fold — so the
+   * video shrinks in place instead of riding up with the page.
+   */
+  const place = (p) => {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const d = dockRect();
+    const e = DOCK_EASE(p);
+    dock.style.left = d.left * e + 'px';
+    dock.style.top = d.top * e - H * (1 - p) + 'px';
+    dock.style.width = W + (d.width - W) * e + 'px';
+    dock.style.height = H + (d.height - H) * e + 'px';
+  };
+
+  if (staticDock) {
+    place(1);
+    window.addEventListener('resize', () => place(1));
+    gsap.set(shade, { opacity: 0 });
+    gsap.set(crop, { opacity: 1 });
+    gsap.set(dockVideo, { scale: 1.1 });
+    gsap.set(reveals, { opacity: 1, y: 0, filter: BLUR_OUT });
     return;
   }
 
-  gsap.set(panel, { opacity: 0, y: 60, filter: BLUR_IN });
+  place(0);
 
-  /* --- Segment A: 3200 -> 4400 --- */
-
-  // Cream wipes in from the left, straight over the hero.
-  tl.fromTo(
-    cream,
-    { clipPath: 'inset(0% 100% 0% 0%)' },
-    { clipPath: 'inset(0% 0% 0% 0%)', duration: SEG_A },
-    HOLD_END
-  );
-
-  // The B — and only the B — wipes in from the right, over the same range.
-  tl.fromTo(
-    bwrap,
-    { clipPath: 'inset(0% 0% 0% 100%)' },
-    { clipPath: 'inset(0% 0% 0% 0%)', duration: SEG_A },
-    HOLD_END
-  );
-
-  // Right-hand photo panel resolves out of the hero footage as the wipe
-  // crosses the midpoint, so no second edge travels across the screen.
-  tl.fromTo(
-    media,
-    { opacity: 0, filter: BLUR_IN },
-    { opacity: 1, filter: BLUR_OUT, duration: SEG_A * 0.35 },
-    HOLD_END + SEG_A * 0.4
-  );
-
-  /* --- Segment B: 4400 -> 5200 --- */
-
-  const bStart = HOLD_END + SEG_A;
-
-  tl.to(
-    panel,
-    {
-      opacity: 1,
-      y: 0,
-      filter: BLUR_OUT,
-      duration: SEG_B * 0.75,
-      ease: 'power2.out',
+  const tl = gsap.timeline({
+    defaults: { ease: 'none' },
+    scrollTrigger: {
+      id: 'dock',
+      trigger: figures,
+      start: 'top bottom',
+      end: 'top top',
+      scrub: true,
+      invalidateOnRefresh: true,
+      markers: MARKERS,
+      onUpdate: (self) => {
+        place(self.progress);
+        hero.classList.toggle('is-docking', self.progress > 0);
+      },
+      onRefresh: (self) => place(self.progress),
+      onToggle: (self) => {
+        if (self.isActive && self.direction > 0) syncVideo(heroVideo, dockVideo);
+        else if (!self.isActive && self.direction < 0) syncVideo(dockVideo, heroVideo);
+      },
     },
-    bStart
+  });
+
+  tl.fromTo(hero, { opacity: 1 }, { opacity: 0, duration: 0.3 }, 0);
+  tl.fromTo(shade, { opacity: 1 }, { opacity: 0, duration: 0.5 }, 0.1);
+  // Pre-scales for Part B's pan headroom, matching the hero's framing at 0.
+  tl.fromTo(dockVideo, { scale: 1 }, { scale: 1.1, duration: 1 }, 0);
+  tl.fromTo(crop, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power1.in' }, 0.6);
+  tl.fromTo(
+    reveals,
+    { opacity: 0, y: 40, filter: BLUR_IN },
+    { opacity: 1, y: 0, filter: BLUR_OUT, duration: 0.3, stagger: 0.1, ease: 'power2.out' },
+    0.5
   );
+}
 
-  /* --- Segment C: 800px per swap. Track slide and photo crossfade overlap
-         so each swap reads as one coordinated motion. --- */
+/* --- Part B: pinned stat cycle (original clock 4.4 -> 6.8) --- */
 
-  for (let i = 1; i < photos.length; i += 1) {
-    const cStart = HOLD_END + SEG_A + SEG_B + SEG_C * (i - 1);
+// xPercent / yPercent of the 1.1x video behind the fixed crop, per stat.
+const DOCK_PAN = [
+  [0, 0],
+  [-3, 2],
+  [2.5, -2],
+];
+
+function addFigures(tl, reduceMotion) {
+  const scope = document.querySelector('[data-figures]');
+  const stats = scope.querySelectorAll('[data-figures-stat]');
+  const dockVideo = scope.querySelector('[data-figures-dockvideo]');
+
+  gsap.set([...stats].slice(1), { opacity: 0, y: 50, filter: BLUR_IN });
+  if (reduceMotion) return;
+
+  for (let i = 1; i < stats.length; i += 1) {
+    const at = FIG_START + SEG_B + SEG_C * (i - 1);
 
     tl.to(
-      track,
-      { y: () => -step() * i, duration: SEG_C * 0.55, ease: 'power2.inOut' },
-      cStart
+      stats[i - 1],
+      { opacity: 0, y: -50, filter: BLUR_IN, duration: SEG_C * 0.5, ease: 'power2.in' },
+      at
+    );
+    tl.fromTo(
+      stats[i],
+      { opacity: 0, y: 50, filter: BLUR_IN },
+      { opacity: 1, y: 0, filter: BLUR_OUT, duration: SEG_C * 0.55, ease: 'power2.out' },
+      at + SEG_C * 0.2
     );
 
-    // Photo panel swipes up in lockstep with the figure track.
+    // Quieter, offset and longer than the text swap — the view drifts.
     tl.to(
-      photoTrack,
-      { y: () => -photoStep() * i, duration: SEG_C * 0.55, ease: 'power2.inOut' },
-      cStart
+      dockVideo,
+      { xPercent: DOCK_PAN[i][0], yPercent: DOCK_PAN[i][1], duration: SEG_C * 0.95, ease: 'sine.inOut' },
+      at + 0.12
     );
   }
 }
@@ -469,7 +544,7 @@ function addAchievements(tl, reduceMotion) {
   const b = scope.querySelector('[data-figures-b]');
   const nautilus = scope.querySelector('[data-figures-nautilus]');
   const cream = scope.querySelector('[data-figures-cream]');
-  const media = scope.querySelector('[data-figures-media]');
+  const media = scope.querySelector('[data-figures-dock]');
   const panel = scope.querySelector('[data-figures-panel]');
 
   /*
@@ -500,6 +575,7 @@ function addAchievements(tl, reduceMotion) {
   }
 
   gsap.set(text, { opacity: 0, scale: 0.95, filter: BLUR_IN });
+  gsap.set(b, { opacity: 0 });
 
   /* --- Segment A: 6800 -> 7300. Nothing is scheduled — the final stat
          holds static so it can actually be read. --- */
@@ -522,6 +598,7 @@ function addAchievements(tl, reduceMotion) {
   );
 
   // B.svg travels to the nautilus's B and hands over to it.
+  tl.to(b, { opacity: 1, duration: S3_TAKEOVER * 0.15 }, takeover);
   tl.to(
     b,
     {

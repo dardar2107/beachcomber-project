@@ -87,7 +87,18 @@ html.lenis body {
   height: 100vh;
   width: 100%;
   overflow: hidden;
+  z-index: 2; /* hero UI stays above the Stage 2 dock while it fades */
   background: var(--navy);
+}
+
+/* Part A: the Stage 2 dock video takes over the backdrop. */
+.hero.is-docking {
+  background: transparent;
+}
+
+.hero.is-docking .hero__video-wrap,
+.hero.is-docking .hero__shade {
+  visibility: hidden;
 }
 
 .hero__video-wrap {
@@ -103,12 +114,12 @@ html.lenis body {
   object-position: center;
 }
 
-/* Frame 1-5 darkens the video behind nav + headline. */
+/* Frame 1-5: light top-down darkening so the nav logo reads. */
 .hero__shade {
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: rgba(0, 0, 0, 0.28);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.12) 40%, rgba(0, 0, 0, 0.18) 100%);
   pointer-events: none;
 }
 
@@ -205,6 +216,7 @@ html.lenis body {
 .hero__content {
   position: absolute;
   left: 0;
+  bottom: 16.287%; /* ~150px @ 921 */
   width: 100%;
   z-index: 25;
   padding: 0 calc(6.0417 * var(--u)); /* 116px @ 1920 */
@@ -302,81 +314,75 @@ html.lenis body {
   }
 }
 
-/* ----------------------------------- Stage 2 — "2026 in figures" overlay -- */
+/* ------------------------------------------ Stage 2 — "2026 in figures" -- */
 
 /*
- * Lives inside the pinned hero and stacks on top of it, so the cream wipes
- * directly over the hero itself. Nothing slides up from below the fold.
- * Geometry follows the 1920x1055 Figma frame: vw = (design px / 1920) * 100.
+ * Its own section after the hero (frame 2-1, 1920x920). --fu is one 1920-canvas
+ * px-unit fitted to both axes of that frame. Part A docks the video (normal
+ * scroll); Part B pins the section and hosts Stages 3-6 on top.
  */
 .figures {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
+  --fu: min(1vw, 2.087vh);
+  --fig-bg: #faf9f8;
+  --fig-ink: #424242;
+  --fig-muted: #6d6e71;
+  --fig-label: #58595b;
+  --fig-gold: #b39a66;
+
+  position: relative;
+  height: 100vh;
+  z-index: 1;
   pointer-events: none;
 }
 
-/* Wipes in from the left, over the hero. */
+/* Extends a viewport above the section so the left side is already cream as
+   the dock shrinks away from the hero. */
 .figures__cream {
   position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: var(--cream);
-  clip-path: inset(0% 100% 0% 0%);
-  will-change: clip-path;
-}
-
-/* Right half carries the photo, sitting above the cream. */
-.figures__media {
-  position: absolute;
-  top: 0;
+  left: 0;
   right: 0;
-  width: 50%;
-  height: 100%;
-  z-index: 2;
-  opacity: 0;
-  overflow: hidden;
-  will-change: opacity, filter;
+  top: -100vh;
+  bottom: 0;
+  z-index: 1;
+  background: var(--fig-bg);
 }
 
-/* One full-height panel per stat, stacked — swipes up on each figure change. */
-.figures__phototrack {
+/* Geometry is driven from JS (screen-anchored while the section scrolls). */
+.figures__dock {
   position: absolute;
-  top: 0;
   left: 0;
+  top: -100vh;
   width: 100%;
-  height: 100%;
-  will-change: transform;
+  height: 100vh;
+  z-index: 2;
+  overflow: hidden;
 }
 
-.figures__photo {
+.figures__dockvideo {
   position: absolute;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background-size: cover;
-  background-position: center;
+  will-change: transform;
 }
 
-.figures__photo:nth-child(1) {
-  top: 0;
+.figures__dockshade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.12) 40%, rgba(0, 0, 0, 0.18) 100%);
 }
 
-.figures__photo:nth-child(2) {
-  top: 100%;
+.figures__crop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
 }
 
-.figures__photo:nth-child(3) {
-  top: 200%;
-}
-
-.figures__photo--a {
-  background-image: url('/assets/totalassets_img.jpg');
-}
-
-.figures__photo--b {
-  background-image: url('/assets/profit-after-tax_img.jpg');
+.figures__crop path {
+  fill: var(--fig-bg);
 }
 
 /*
@@ -388,8 +394,6 @@ html.lenis body {
   position: absolute;
   inset: 0;
   z-index: 7; /* above the Stage 3/4 backgrounds, below the Stage 4 tablet */
-  clip-path: inset(0% 0% 0% 100%);
-  will-change: clip-path;
 }
 
 /*
@@ -434,80 +438,80 @@ html.lenis body {
   will-change: transform, opacity;
 }
 
-/* --- Left panel --- */
+/* --- Left panel (frame 2-1 group at 119,128) --- */
 
 .figures__panel {
   position: absolute;
-  left: calc(6.1979 * var(--u)); /* 119px @ 1920 */
-  top: calc(10 * var(--u)); /* 192px @ 1920 */
-  width: calc(36.1458 * var(--u)); /* 694px @ 1920 */
+  left: calc(6.1979 * var(--fu));
+  top: calc(6.6667 * var(--fu));
+  width: calc(36.8229 * var(--fu));
   z-index: 99;
-  color: var(--ink);
-  opacity: 0;
   pointer-events: auto;
-  will-change: transform, opacity, filter;
 }
 
 .figures__title {
   font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: clamp(28px, calc(3.125 * var(--u)), 60px); /* 60px @ 1920 */
-  line-height: 1.1667;
+  font-weight: 600;
+  font-size: clamp(30px, calc(3.1250 * var(--fu)), 60px);
+  line-height: 1;
   letter-spacing: -0.03em;
+  color: var(--fig-ink);
 }
 
 .figures__intro {
-  margin-top: 0.5em;
-  max-width: calc(22.9167 * var(--u)); /* 440px @ 1920 */
+  margin-top: calc(1.4583 * var(--fu));
   font-family: var(--font-sans);
   font-weight: 500;
-  font-size: var(--fs-body);
-  line-height: 1.5;
+  font-size: clamp(13px, calc(0.8333 * var(--fu)), 16px);
+  line-height: 1.375;
   letter-spacing: -0.02em;
+  color: var(--fig-muted);
 }
 
-/* Figures carousel — a clipped window the track slides through. */
-.figures__window {
-  margin-top: calc(4.4792 * var(--u)); /* puts the window top at 212px @ 1920 */
-  height: calc(12.9167 * var(--u)); /* 248px @ 1920 */
-  overflow: hidden;
+/* Stats stack in one box and swap in place. */
+.figures__stats {
+  position: relative;
+  margin-top: calc(5.2083 * var(--fu));
+  height: calc(12.8646 * var(--fu));
 }
 
-.figures__track {
-  will-change: transform;
+.figures__stat {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity, filter;
 }
 
-.figure {
-  height: calc(15.2604 * var(--u)); /* 293px @ 1920 — one carousel step */
-}
-
-.figure__label {
+.figures__label {
   font-family: var(--font-sans);
   font-weight: 700;
-  font-size: var(--fs-body);
+  font-size: clamp(13px, calc(0.8333 * var(--fu)), 16px);
   line-height: 1.2;
-  letter-spacing: 0;
+  color: var(--fig-label);
 }
 
-.figure__value {
+.figures__value {
   display: flex;
   align-items: baseline;
-  gap: 0.09em;
-  margin-top: 0.3173em; /* figure line box lands at 89px @ 1920 */
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: clamp(64px, calc(11.4583 * var(--u)), 220px); /* 220px @ 1920 */
-  line-height: 0.4673; /* 102.806px against 220px */
-  letter-spacing: -0.05em;
-  color: var(--gold);
+  gap: calc(0.3125 * var(--fu));
+  margin-top: calc(3.2292 * var(--fu));
+  white-space: nowrap;
+  color: var(--stone);
 }
 
-.figure__unit {
+.figures__num {
+  font-family: var(--font-serif);
   font-weight: 700;
-  font-size: 0.1294em; /* 28.469px against the 220px figure */
-  line-height: 1.3333;
+  font-size: clamp(90px, calc(11.4583 * var(--fu)), 220px);
+  line-height: 0.75;
+  letter-spacing: -0.05em;
+}
+
+.figures__unit {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(16px, calc(1.5625 * var(--fu)), 30px);
+  line-height: 1.2653;
   letter-spacing: -0.01em;
-  color: var(--ink);
 }
 
 /* --- Bottom row: static through the cycling --- */
@@ -515,86 +519,81 @@ html.lenis body {
 .figures__actions {
   display: flex;
   align-items: center;
-  gap: calc(2.9167 * var(--u)); /* 56px @ 1920 */
-  margin-top: calc(4.6354 * var(--u)); /* puts the row top at 549px @ 1920 */
-  margin-bottom: calc(5 * var(--u)); /* 96px @ 1920 */
+  gap: calc(2.4479 * var(--fu));
+  margin-top: calc(7.4479 * var(--fu));
 }
 
-.btn-dark {
+.btn-gold {
   display: inline-flex;
   align-items: center;
-  gap: 2em;
-  background: var(--ink);
+  gap: calc(1.5625 * var(--fu));
+  padding: calc(1.0417 * var(--fu)) calc(1.5625 * var(--fu));
+  border-radius: 8px;
+  background: var(--fig-gold);
   color: #fff;
-  border-radius: 4px;
-  padding: 1.3333em 2em; /* 20px / 30px against 15px */
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: var(--fs-ui);
-  line-height: 1.0667; /* trims to a 56px row @ 1920 */
+  font-weight: 700;
+  font-size: clamp(12px, calc(0.7812 * var(--fu)), 15px);
+  line-height: 1.6;
   letter-spacing: -0.02em;
   text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 0.3s ease;
+  transition: filter 0.3s ease;
 }
 
-.btn-dark:hover {
-  background: #1f1f1f;
+.btn-gold:hover {
+  filter: brightness(1.06);
 }
 
-.icon--external {
-  width: 1.0667em;
-  stroke-width: 1.4;
+.btn-gold img {
+  width: clamp(12px, calc(0.8333 * var(--fu)), 16px);
+  height: clamp(12px, calc(0.8333 * var(--fu)), 16px);
 }
 
 .figures__divider {
   width: 1px;
-  height: calc(2.7083 * var(--u)); /* 52px @ 1920 */
-  background: rgba(51, 51, 51, 0.35);
+  height: calc(1.8750 * var(--fu));
+  background: rgba(66, 66, 66, 0.2);
 }
 
-.shareprice__label {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: var(--fs-body);
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.shareprice__label span {
-  font-weight: 500;
-  text-transform: none;
+.shareprice {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(1.0417 * var(--fu));
+  color: var(--fig-ink);
 }
 
 .shareprice__value {
   display: flex;
   align-items: baseline;
-  gap: 0.2em;
-  margin-top: 0.3em;
+  gap: calc(0.1562 * var(--fu));
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: clamp(20px, calc(2.0833 * var(--u)), 40px); /* 40px @ 1920 */
-  line-height: 0.9;
+  font-weight: 700;
+  font-size: clamp(28px, calc(2.6042 * var(--fu)), 50px);
+  line-height: 0.75;
   letter-spacing: -0.05em;
-  color: var(--gold);
 }
 
 .shareprice__value span {
+  font-size: 0.32em;
+  letter-spacing: -0.01em;
+}
+
+.shareprice__label {
+  width: 10.25em; /* 164px @ 16px — tracks the clamped font, not the canvas */
+  font-family: var(--font-sans);
   font-weight: 700;
-  font-size: 0.4em;
-  letter-spacing: 0;
-  color: var(--ink);
+  font-size: clamp(12px, calc(0.8333 * var(--fu)), 16px);
+  line-height: 1.125;
+}
+
+.shareprice__label span {
+  font-weight: 500;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .figures__cream,
-  .figures__bwrap {
-    clip-path: inset(0% 0% 0% 0%);
-  }
-
-  .figures__media,
-  .figures__panel {
+  .figures__crop {
     opacity: 1;
   }
 }
