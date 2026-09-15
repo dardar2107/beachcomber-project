@@ -1321,8 +1321,9 @@ function addArtisans(tl, reduceMotion) {
     a3.at
   );
 
-  // 4. The two figures count up as they land.
-  const a4 = beat(0.62, 1);
+  // 4. The two figures count up as they land — finishing a beat early so the
+  // resting frame always reads the full value, never one short.
+  const a4 = beat(0.62, 0.92);
   scope.querySelectorAll('[data-count]').forEach((el) => {
     const target = parseFloat(el.dataset.count);
     const prefix = el.dataset.prefix || '';

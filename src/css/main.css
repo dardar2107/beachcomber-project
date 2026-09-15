@@ -323,6 +323,9 @@ html.lenis body {
  */
 .figures {
   --fu: min(1vw, 2.087vh);
+  /* One frame px of height (frames are 1920x920): vertical positions and
+     image heights use it so full-screen sections fill any viewport height. */
+  --fv: calc(100vh / 920);
   --fig-bg: #faf9f8;
   --fig-ink: #424242;
   --fig-muted: #6d6e71;
@@ -446,7 +449,7 @@ html.lenis body {
 .figures__panel {
   position: absolute;
   left: calc(6.1979 * var(--fu));
-  top: calc(6.1979 * var(--fu)); /* 119: puts the title's cap line on 128 */
+  top: calc(119 * var(--fv)); /* 119: puts the title's cap line on 128 */
   width: calc(36.8229 * var(--fu));
   z-index: 99;
   pointer-events: auto;
@@ -462,7 +465,7 @@ html.lenis body {
 }
 
 .figures__intro {
-  margin-top: calc(1.4583 * var(--fu));
+  margin-top: calc(28 * var(--fv));
   font-family: var(--font-sans);
   font-weight: 500;
   font-size: clamp(13px, calc(0.8333 * var(--fu)), 16px);
@@ -474,8 +477,8 @@ html.lenis body {
 /* Stats stack in one box and swap in place. */
 .figures__stats {
   position: relative;
-  margin-top: calc(5.0000 * var(--fu));
-  height: calc(12.8646 * var(--fu));
+  margin-top: calc(96 * var(--fv));
+  height: calc(247 * var(--fv));
 }
 
 .figures__stat {
@@ -496,7 +499,7 @@ html.lenis body {
   display: flex;
   align-items: baseline;
   gap: calc(0.3125 * var(--fu));
-  margin-top: calc(3.6458 * var(--fu));
+  margin-top: calc(70 * var(--fv));
   white-space: nowrap;
   color: var(--stone);
 }
@@ -523,7 +526,7 @@ html.lenis body {
   display: flex;
   align-items: center;
   gap: calc(2.4479 * var(--fu));
-  margin-top: calc(7.4479 * var(--fu));
+  margin-top: calc(143 * var(--fv));
 }
 
 .btn-gold {
@@ -1087,9 +1090,9 @@ html.lenis body {
   position: absolute;
   z-index: 1;
   left: calc(42.0312 * var(--fu));
-  top: calc(1.9271 * var(--fu));
+  top: calc(37 * var(--fv));
   width: calc(58.0729 * var(--fu));
-  height: calc(44.4271 * var(--fu));
+  height: calc(853 * var(--fv));
   opacity: 0;
   will-change: transform, opacity, filter;
 }
@@ -1112,14 +1115,14 @@ html.lenis body {
 
 .artisans__vec--1 {
   left: calc(12.3958 * var(--fu));
-  top: calc(28.7500 * var(--fu));
+  top: calc(552 * var(--fv));
   width: calc(72.5000 * var(--fu));
   fill: #faf9f8;
 }
 
 .artisans__vec--2 {
   left: calc(150.2604 * var(--fu));
-  top: calc(-82.6562 * var(--fu));
+  top: calc(-1587 * var(--fv));
   width: calc(68.6458 * var(--fu));
   fill: #f0eee5;
 }
@@ -1138,7 +1141,7 @@ html.lenis body {
 
 .artisans__eyebrow {
   left: calc(6.0417 * var(--fu));
-  top: calc(3.7500 * var(--fu));
+  top: calc(72 * var(--fv));
   font-family: var(--font-serif);
   font-style: italic;
   font-weight: 400;
@@ -1151,7 +1154,7 @@ html.lenis body {
 
 .artisans__headline {
   left: calc(6.0417 * var(--fu));
-  top: calc(8.5938 * var(--fu));
+  top: calc(165 * var(--fv));
   width: calc(32.2917 * var(--fu));
   font-family: var(--font-sans);
   font-weight: 700;
@@ -1163,7 +1166,7 @@ html.lenis body {
 
 .artisans__body {
   left: calc(6.2500 * var(--fu));
-  top: calc(16.9792 * var(--fu));
+  top: calc(326 * var(--fv));
   width: calc(25.0000 * var(--fu));
   font-family: var(--font-sans);
   font-weight: 500;
@@ -1191,8 +1194,8 @@ html.lenis body {
   white-space: nowrap;
 }
 
-.artisans__stat--1 { left: calc(5.9896 * var(--fu)); top: calc(28.6979 * var(--fu)); }
-.artisans__stat--2 { left: calc(6.0938 * var(--fu)); top: calc(34.3229 * var(--fu)); }
+.artisans__stat--1 { left: calc(5.9896 * var(--fu)); top: calc(551 * var(--fv)); }
+.artisans__stat--2 { left: calc(6.0938 * var(--fu)); top: calc(659 * var(--fv)); }
 
 .artisans__label {
   font-family: var(--font-sans);
@@ -1204,8 +1207,8 @@ html.lenis body {
   white-space: nowrap;
 }
 
-.artisans__label--1 { left: calc(20.8854 * var(--fu)); top: calc(30.9375 * var(--fu)); }
-.artisans__label--2 { left: calc(15.9375 * var(--fu)); top: calc(36.5625 * var(--fu)); }
+.artisans__label--1 { left: calc(20.8854 * var(--fu)); top: calc(594 * var(--fv)); }
+.artisans__label--2 { left: calc(15.9375 * var(--fu)); top: calc(702 * var(--fv)); }
 
 .artisans__photo {
   position: absolute;
@@ -1219,9 +1222,9 @@ html.lenis body {
   object-fit: cover;
 }
 
-.artisans__photo--1 { left: calc(111.5104 * var(--fu)); top: calc(6.1458 * var(--fu)); width: calc(23.9062 * var(--fu)); height: calc(28.1771 * var(--fu)); }
-.artisans__photo--2 { left: calc(129.8438 * var(--fu)); top: calc(20.3125 * var(--fu)); width: calc(18.9062 * var(--fu)); height: calc(22.1875 * var(--fu)); }
-.artisans__photo--3 { left: calc(151.8229 * var(--fu)); top: calc(11.3021 * var(--fu)); width: calc(18.9062 * var(--fu)); height: calc(22.1875 * var(--fu)); }
+.artisans__photo--1 { left: calc(111.5104 * var(--fu)); top: calc(118 * var(--fv)); width: calc(23.9062 * var(--fu)); height: calc(541 * var(--fv)); }
+.artisans__photo--2 { left: calc(129.8438 * var(--fu)); top: calc(390 * var(--fv)); width: calc(18.9062 * var(--fu)); height: calc(426 * var(--fv)); }
+.artisans__photo--3 { left: calc(151.8229 * var(--fu)); top: calc(217 * var(--fv)); width: calc(18.9062 * var(--fu)); height: calc(426 * var(--fv)); }
 
 /* Frame 9-1 crops this one off-centre rather than a plain cover. */
 .artisans__photo--1 img {
@@ -1231,12 +1234,12 @@ html.lenis body {
   width: 226.44%;
   height: 128.1%;
   max-width: none;
-  object-fit: fill;
+  object-fit: cover; /* box height follows the viewport; never distort */
 }
 
 .artisans__closing {
   left: calc(175.1042 * var(--fu));
-  top: calc(19.2188 * var(--fu));
+  top: calc(369 * var(--fv));
   width: calc(18.3854 * var(--fu));
   font-family: var(--font-sans);
   font-weight: 700;
@@ -1248,7 +1251,7 @@ html.lenis body {
 
 .artisans__closing-body {
   left: calc(177.5000 * var(--fu));
-  top: calc(33.1250 * var(--fu));
+  top: calc(636 * var(--fv));
   width: calc(22.0833 * var(--fu));
   font-family: var(--font-sans);
   font-weight: 500;
@@ -1264,8 +1267,8 @@ html.lenis body {
   font-size: clamp(11px, calc(0.7812 * var(--fu)), 15px);
 }
 
-.artisans__cta--1 { left: calc(6.2500 * var(--fu)); top: calc(41.1458 * var(--fu)); }
-.artisans__cta--2 { left: calc(177.5000 * var(--fu)); top: calc(40.9896 * var(--fu)); }
+.artisans__cta--1 { left: calc(6.2500 * var(--fu)); top: calc(790 * var(--fv)); }
+.artisans__cta--2 { left: calc(177.5000 * var(--fu)); top: calc(787 * var(--fv)); }
 
 /* Flat buttons (frames 9-1, 10-1): label box is cap-trimmed, so the padding
    alone sets the height — 20px/16px above and below an 11px cap line. */
