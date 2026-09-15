@@ -664,12 +664,17 @@ function addAchievements(tl, reduceMotion) {
   const takeover = STAGE2_END + S3_HOLD_A;
   const MOVE_AT = takeover + S3_TAKEOVER * 0.08;
   const MOVE = S3_TAKEOVER * 0.9;
+  const WIPE = S3_TAKEOVER * 0.85;
+  // The B keeps the figures background colour until the blue fully covers the
+  // screen; only then does it tint, gain its rays and dissolve. That tail
+  // borrows Segment D's hold, so Stage 4 still starts at 9600.
+  const RECOLOR_AT = takeover + WIPE + 0.04;
 
   // The blue wipes in from the right and covers the video.
   tl.fromTo(
     sky,
     { clipPath: 'inset(0% 0% 0% 100%)' },
-    { clipPath: 'inset(0% 0% 0% 0%)', duration: S3_TAKEOVER * 0.85, ease: 'power1.inOut' },
+    { clipPath: 'inset(0% 0% 0% 0%)', duration: WIPE, ease: 'power1.inOut' },
     takeover
   );
 
@@ -680,19 +685,19 @@ function addAchievements(tl, reduceMotion) {
   tl.to(morph, { t: 1, duration: MOVE, ease: 'power2.inOut', onUpdate: render }, MOVE_AT);
   tl.to(
     b,
-    { backgroundColor: WATERMARK_TINT, duration: MOVE * 0.55, ease: 'power1.inOut' },
-    MOVE_AT + MOVE * 0.1
+    { backgroundColor: WATERMARK_TINT, duration: 0.4, ease: 'power1.inOut' },
+    RECOLOR_AT
   );
 
-  // Rays grow in around the travelling B, registered to it the whole way.
+  // Rays grow in around the B as it settles, registered to it throughout.
   tl.fromTo(
     nautilus,
     { opacity: 0 },
-    { opacity: WATERMARK_OPACITY, duration: MOVE * 0.45, ease: 'power1.out' },
-    MOVE_AT + MOVE * 0.5
+    { opacity: WATERMARK_OPACITY, duration: 0.6, ease: 'power1.out' },
+    RECOLOR_AT - 0.01
   );
-  // By now b's tint matches the watermark, so it dissolves into the nautilus B.
-  tl.to(b, { opacity: 0, duration: MOVE * 0.25, ease: 'power1.in' }, MOVE_AT + MOVE * 0.75);
+  // Once b's tint matches the watermark, it dissolves into the nautilus B.
+  tl.to(b, { opacity: 0, duration: 0.25, ease: 'power1.in' }, RECOLOR_AT + 0.36);
 
   tl.to(
     panel,
@@ -706,7 +711,7 @@ function addAchievements(tl, reduceMotion) {
   tl.to(
     text,
     { opacity: 1, scale: 1, filter: BLUR_OUT, duration: S3_TEXT * 0.8, ease: 'power2.out' },
-    takeover + S3_TAKEOVER
+    RECOLOR_AT + 0.64
   );
 
   /* --- Segment D: 9100 -> 9600. Nothing scheduled; Stage 4 picks up at 9600. --- */
