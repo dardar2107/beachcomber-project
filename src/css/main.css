@@ -905,10 +905,13 @@ html.lenis body {
   fill: #faf9f8;
 }
 
-/* Frames 8-2..8-4: two white Bs peeking up from the bottom edge. */
+/*
+ * Frames 8-2..8-4: two white Bs peeking up from the bottom edge. Anchored to
+ * the bottom and scaled with width only, so the visible band (and how the large
+ * B covers the small one's counter) keeps Figma's proportions on any screen.
+ */
 .pillars__shape {
   position: absolute;
-  top: 100%;
   z-index: 2;
   height: auto;
   aspect-ratio: 1318 / 1891;
@@ -917,10 +920,12 @@ html.lenis body {
 }
 
 .pillars__shape--sm {
+  top: calc(100% - 6.0938vw); /* top at 803 of 920 @ 1920 */
   width: 38.9063%; /* 747px */
 }
 
 .pillars__shape--lg {
+  top: calc(100% - 6.9792vw); /* top at 786 of 920 @ 1920 */
   width: 94.0104%; /* 1805px */
 }
 

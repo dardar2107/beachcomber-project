@@ -923,11 +923,14 @@ function initPillarsInteraction(root, reduceMotion) {
   const EASE = 'power2.inOut';
   // 8-1 -> 8-2: headline 42.5% -> 17.07%, description 55.22% -> 29.83%.
   const headLift = () => -((42.5 - 17.07) / 100) * window.innerHeight;
+  // Parks the bottom Bs just below the edge (their visible band is <7vw).
+  const shapeDrop = () => 0.1 * window.innerWidth;
 
   let active = -1;
   let pending = 0;
 
   gsap.set(details, { autoAlpha: 0, y: 16 });
+  gsap.set([shapeSm, shapeLg], { y: shapeDrop });
 
   const select = (i) => {
     if (i === active) return;
@@ -955,12 +958,28 @@ function initPillarsInteraction(root, reduceMotion) {
       gsap.to(head, { ...t, y: headLift });
       gsap.to(bigb, { ...t, opacity: 0, left: '-62%' });
       // First reveal rises from below the edge at the target position.
-      gsap.set(shapeSm, { left: pos.sm + '%', top: '100%' });
-      gsap.set(shapeLg, { left: pos.lg + '%', top: '100%' });
+      gsap.set(shapeSm, { left: pos.sm + '%', y: shapeDrop });
+      gsap.set(shapeLg, { left: pos.lg + '%', y: shapeDrop });
     }
     // One tween per B carries both axes, so a fast retarget never strands a rise.
-    gsap.to(shapeSm, { ...t, left: pos.sm + '%', top: '87.28%' });
-    gsap.to(shapeLg, { ...t, left: pos.lg + '%', top: '85.43%' });
+    gsap.to(shapeSm, { ...t, left: pos.sm + '%', y: 0 });
+    gsap.to(shapeLg, { ...t, left: pos.lg + '%', y: 0 });
+  };
+
+  // Back to the generic 8-1 state, instantly — only ever called while the
+  // section is off screen or covered (see the timeline callbacks).
+  const reset = () => {
+    clearTimeout(pending);
+    if (active < 0) return;
+    active = -1;
+    root.classList.add('is-default');
+    const s = { overwrite: true };
+    gsap.set(imgs, { ...s, opacity: (k) => (k === 0 ? 1 : 0) });
+    gsap.set(labels, { ...s, autoAlpha: 0.2 });
+    gsap.set(details, { ...s, autoAlpha: 0, y: 16 });
+    gsap.set(head, { ...s, y: 0 });
+    gsap.set(bigb, { ...s, opacity: 1, left: '-49.6354%' });
+    gsap.set([shapeSm, shapeLg], { ...s, y: shapeDrop });
   };
 
   labels.forEach((el, i) => {
@@ -982,7 +1001,10 @@ function initPillarsInteraction(root, reduceMotion) {
 
   ScrollTrigger.addEventListener('refresh', () => {
     if (active >= 0) gsap.set(head, { y: headLift() });
+    else gsap.set([shapeSm, shapeLg], { y: shapeDrop() });
   });
+
+  return reset;
 }
 
 /* --- Scroll entry from Stage 4, then the hold --- */
@@ -1001,7 +1023,7 @@ function addPillars(tl, reduceMotion) {
   const panel = scope.querySelector('[data-product-panel]');
   const nautilus = scope.querySelector('[data-figures-nautilus]');
 
-  initPillarsInteraction(root, reduceMotion);
+  const resetPillars = initPillarsInteraction(root, reduceMotion);
 
   if (reduceMotion) {
     gsap.set(root, { autoAlpha: 1 });
@@ -1062,6 +1084,11 @@ function addPillars(tl, reduceMotion) {
   );
 
   tl.to({}, { duration: S5_HOLD }, entry + S5_ENTRY);
+
+  // Leaving the section either way (up past its entry, or on into Stage 6)
+  // returns it to the generic state, so every visit starts from Be Responsible.
+  tl.call(resetPillars, null, entry);
+  tl.call(resetPillars, null, entry + S5_ENTRY + S5_HOLD);
 }
 
 /* ------------------------- Stage 6 — Our Artisans, horizontal scroll -- */
