@@ -105,10 +105,10 @@ const STAGE4_END =
   STAGE3_END + S4_ENTER + S4_HOLD_B + S4_SHIFT * S4_ROWS_OFFSET + S4_ROWS + S4_HOLD_E;
 
 const S5_ENTRY = 1.0;
-const S5_PILLAR = 1.2; // per pillar block
-const PILLAR_COLORS = ['#a2c088', '#8fb8a8', '#c2a482', '#7e9bb5'];
+// Pinned while the reader explores the pillars — hover/tap, not scroll, drives them.
+const S5_HOLD = 2.0;
 
-const STAGE5_END = STAGE4_END + S5_ENTRY + S5_PILLAR * 4;
+const STAGE5_END = STAGE4_END + S5_ENTRY + S5_HOLD;
 
 const STAGE5_END_T = STAGE5_END;
 
@@ -898,203 +898,168 @@ function addProduct(tl, reduceMotion) {
  * swipe up, and of the text only the pillar word swipes — "BE" and the CTA
  * are shared elements that never move.
  */
+/*
+ * Bottom-B placements per active pillar, as left % of the frame (frames 8-2,
+ * 8-3, 8-4). Frame 8-4 only shows the large B, so the small one tucks inside it.
+ */
+const PILLAR_SHAPES = [
+  { sm: 3.6979, lg: -18.125 }, // Be Conscious
+  { sm: 34.6875, lg: 12.6042 }, // Be Caring
+  { sm: 69.1146, lg: 47.2917 }, // Be Engaged
+];
+const PILLAR_HOVER_INTENT = 90; // ms a pointer must rest before a pillar takes over
+
+/* --- Hover / tap state: independent of the scroll timeline --- */
+
+function initPillarsInteraction(root, reduceMotion) {
+  const imgs = root.querySelectorAll('[data-pillars-img]');
+  const bigb = root.querySelector('[data-pillars-bigb]');
+  const [shapeSm, shapeLg] = root.querySelectorAll('[data-pillars-shape]');
+  const head = root.querySelector('[data-pillars-head]');
+  const labels = root.querySelectorAll('[data-pillar-label]');
+  const details = root.querySelectorAll('[data-pillar-detail]');
+
+  const D = reduceMotion ? 0 : 0.45;
+  const EASE = 'power2.inOut';
+  // 8-1 -> 8-2: headline 42.5% -> 17.07%, description 55.22% -> 29.83%.
+  const headLift = () => -((42.5 - 17.07) / 100) * window.innerHeight;
+
+  let active = -1;
+  let pending = 0;
+
+  gsap.set(details, { autoAlpha: 0, y: 16 });
+
+  const select = (i) => {
+    if (i === active) return;
+    const first = active < 0;
+    active = i;
+    root.classList.remove('is-default');
+
+    // overwrite:true kills every tween on the element, including a delayed one
+    // that hasn't started yet ('auto' would miss it and let two pillars stack).
+    const t = { duration: D, ease: EASE, overwrite: true };
+
+    gsap.to(imgs, { ...t, opacity: (k) => (k === i + 1 ? 1 : 0) });
+    labels.forEach((el, k) => gsap.to(el, { ...t, autoAlpha: k === i ? 0 : 0.3 }));
+    details.forEach((el, k) =>
+      gsap.to(el, {
+        ...t,
+        autoAlpha: k === i ? 1 : 0,
+        y: k === i ? 0 : 16,
+        delay: k === i ? D * 0.15 : 0,
+      })
+    );
+
+    const pos = PILLAR_SHAPES[i];
+    if (first) {
+      gsap.to(head, { ...t, y: headLift });
+      gsap.to(bigb, { ...t, opacity: 0, left: '-62%' });
+      // First reveal rises from below the edge at the target position.
+      gsap.set(shapeSm, { left: pos.sm + '%', top: '100%' });
+      gsap.set(shapeLg, { left: pos.lg + '%', top: '100%' });
+    }
+    // One tween per B carries both axes, so a fast retarget never strands a rise.
+    gsap.to(shapeSm, { ...t, left: pos.sm + '%', top: '87.28%' });
+    gsap.to(shapeLg, { ...t, left: pos.lg + '%', top: '85.43%' });
+  };
+
+  labels.forEach((el, i) => {
+    el.addEventListener('pointerenter', (e) => {
+      if (e.pointerType === 'touch') return;
+      clearTimeout(pending);
+      pending = setTimeout(() => select(i), PILLAR_HOVER_INTENT);
+    });
+    el.addEventListener('pointerleave', (e) => {
+      if (e.pointerType === 'touch') return;
+      clearTimeout(pending);
+    });
+    // Tap on touch, Enter/Space on keyboard. Mouse-out never reverts.
+    el.addEventListener('click', () => {
+      clearTimeout(pending);
+      select(i);
+    });
+  });
+
+  ScrollTrigger.addEventListener('refresh', () => {
+    if (active >= 0) gsap.set(head, { y: headLift() });
+  });
+}
+
+/* --- Scroll entry from Stage 4, then the hold --- */
+
 function addPillars(tl, reduceMotion) {
   const scope = document.querySelector('[data-figures]');
-  if (!scope) return;
+  const root = scope && scope.querySelector('[data-pillars]');
+  if (!root) return;
 
-  const bgs = scope.querySelectorAll('[data-pillar-bg]');
-  const lgs = scope.querySelectorAll('[data-pillar-lg]');
-  const smls = scope.querySelectorAll('[data-pillar-sml]');
-  const words = scope.querySelectorAll('[data-pillar-word]');
-  const bodies = scope.querySelectorAll('[data-pillar-body]');
-  if (!bgs.length) return;
-
-  const shape = scope.querySelector('[data-pillars-shape]');
-  const be = scope.querySelector('[data-pillars-be]');
-  const cta = scope.querySelector('[data-pillars-cta]');
+  const imgsWrap = root.querySelector('[data-pillars-imgs]');
+  const media = root.querySelector('[data-pillars-media]');
+  const bigbWrap = root.querySelector('[data-pillars-bigb-wrap]');
+  const intro = root.querySelector('[data-pillars-intro]');
+  const pillars = root.querySelectorAll('[data-pillar]');
   const tablet = scope.querySelector('[data-product-tablet]');
   const panel = scope.querySelector('[data-product-panel]');
   const nautilus = scope.querySelector('[data-figures-nautilus]');
 
-  const HIDDEN = { '--wipe': '0%' };
-  const SHOWN = { '--wipe': '100%' };
-  const inner = (w) => w.firstElementChild;
-  const SML_TRAVEL = 55; // percent of the photo's own height
-  const SML_BLUR = 'blur(6px)';
-
-  const SHAPE_START_SCALE = 0.705;
-  const shapeStartX = () => -0.4193 * window.innerWidth;
-  const shapeStartY = () => -0.1115 * window.innerWidth;
+  initPillarsInteraction(root, reduceMotion);
 
   if (reduceMotion) {
-    gsap.set([...bgs, ...lgs, ...smls], SHOWN);
-    gsap.set([...bodies, ...lgs], { opacity: 0 });
-    gsap.set(
-      [bodies[bodies.length - 1], lgs[lgs.length - 1], be, cta],
-      { opacity: 1 }
-    );
-    gsap.set(shape, { opacity: 1, scale: 1, x: 0, y: 0 });
-    gsap.set([tablet, panel], { opacity: 0 });
+    gsap.set(root, { autoAlpha: 1 });
+    gsap.set([tablet, panel, nautilus], { opacity: 0 });
     return;
   }
 
-  gsap.set([...bgs, ...lgs, ...smls], HIDDEN);
-  gsap.set(bodies, { opacity: 0 });
-  gsap.set([be, cta], { opacity: 0, filter: BLUR_IN });
-  words.forEach((w, i) => gsap.set(inner(w), { yPercent: i === 0 ? 100 : 100 }));
+  gsap.set([bigbWrap, intro, ...pillars], { opacity: 0 });
 
   const entry = STAGE4_END;
-  const beat = (from, to) => ({
-    at: entry + S5_ENTRY * from,
-    duration: S5_ENTRY * (to - from),
-  });
 
-  /* --- 1. Stage 4 fades away --- */
+  // Stage 4 steps back.
+  tl.to([tablet, panel, nautilus], { opacity: 0, duration: 0.35, ease: 'power1.in' }, entry);
 
-  const b1 = beat(0, 0.3);
-  tl.to([tablet, panel], { opacity: 0, duration: b1.duration }, b1.at);
-  tl.to(nautilus, { opacity: 0, duration: b1.duration }, b1.at);
-
-  /* --- 2. The B expands, moving right --- */
-
-  const b2 = beat(0.28, 0.62);
+  // The photo rises into frame from the bottom edge, settling from a slight zoom.
   tl.fromTo(
-    shape,
-    {
-      opacity: 0,
-      scale: SHAPE_START_SCALE,
-      x: shapeStartX,
-      y: shapeStartY,
-    },
-    {
-      opacity: 1,
-      scale: 1,
-      x: 0,
-      y: 0,
-      duration: b2.duration,
-      ease: 'power2.inOut',
-      // Otherwise GSAP applies the from-values at build time, putting the B
-      // on screen from the very start of Stage 1.
-      immediateRender: false,
-    },
-    b2.at
+    root,
+    { autoAlpha: 0 },
+    { autoAlpha: 1, duration: 0.001, immediateRender: false },
+    entry + 0.1
   );
-
-  /* --- 3. Colour and photos wipe at 110deg, starting with the B --- */
-
-  const b3 = beat(0.28, 0.72);
-  tl.to(
-    [bgs[0], lgs[0], smls[0]],
-    { ...SHOWN, duration: b3.duration, ease: 'power2.inOut' },
-    b3.at
-  );
-  tl.to(lgs[0], { opacity: 1, duration: b3.duration * 0.4 }, b3.at);
-
-  // The small photo resolves out of the same soft blur it uses on the swaps.
   tl.fromTo(
-    inner(smls[0]),
-    { filter: SML_BLUR },
-    {
-      filter: BLUR_OUT,
-      duration: b3.duration * 0.8,
-      ease: 'power2.out',
-      immediateRender: false,
-    },
-    b3.at
+    media,
+    { clipPath: 'inset(100% 0% 0% 0%)' },
+    { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.55, ease: 'power2.inOut', immediateRender: false },
+    entry + 0.1
+  );
+  tl.fromTo(
+    imgsWrap,
+    { scale: 1.1 },
+    { scale: 1, duration: 0.9, ease: 'power2.out', immediateRender: false },
+    entry + 0.1
   );
 
-  const b4 = beat(0.68, 1);
-  tl.to(
-    inner(words[0]),
-    { yPercent: 0, duration: b4.duration * 0.8, ease: 'power2.out' },
-    b4.at
-  );
-  tl.to(bodies[0], { opacity: 1, duration: b4.duration * 0.8 }, b4.at);
-  tl.to(
-    [be, cta],
-    {
-      opacity: 1,
-      filter: BLUR_OUT,
-      duration: b4.duration * 0.8,
-      stagger: b4.duration * 0.2,
-      ease: 'power2.out',
-    },
-    b4.at
+  // The cream B drifts in from the left edge.
+  tl.fromTo(
+    bigbWrap,
+    { opacity: 0, left: '-10%' },
+    { opacity: 1, left: '0%', duration: 0.5, ease: 'power2.out', immediateRender: false },
+    entry + 0.4
   );
 
-  /* --- Pillar to pillar: colour crossfades, photos swipe up, word swipes. --- */
+  tl.fromTo(
+    intro,
+    { opacity: 0, y: 40, filter: BLUR_IN },
+    { opacity: 1, y: 0, filter: BLUR_OUT, duration: 0.45, ease: 'power2.out', immediateRender: false },
+    entry + 0.45
+  );
 
-  for (let i = 1; i < bgs.length; i += 1) {
-    const at = STAGE4_END + S5_ENTRY + S5_PILLAR * i;
-    const swap = S5_PILLAR * 0.5;
+  // Labels rise via `top`, not a transform, so they keep blending over the B.
+  tl.fromTo(
+    pillars,
+    { opacity: 0, top: '4%' },
+    { opacity: 1, top: '0%', duration: 0.4, stagger: 0.08, ease: 'power2.out', immediateRender: false },
+    entry + 0.6
+  );
 
-    // These panels are already fully wiped; they arrive by fading/sliding.
-    gsap.set([bgs[i], lgs[i], smls[i]], SHOWN);
-    gsap.set(bgs[i], { opacity: 0 });
-    gsap.set(inner(smls[i]), { yPercent: SML_TRAVEL, opacity: 0 });
-
-    // Colour fades to the next colour.
-    tl.to(bgs[i], { opacity: 1, duration: swap, ease: 'power1.inOut' }, at);
-
-    // Left photo simply crossfades.
-    tl.to(lgs[i - 1], { opacity: 0, duration: swap, ease: 'power1.inOut' }, at);
-    tl.fromTo(
-      lgs[i],
-      { opacity: 0 },
-      {
-        opacity: 1,
-        duration: swap,
-        ease: 'power1.inOut',
-        immediateRender: false,
-      },
-      at
-    );
-
-    // Small photo drifts up a short distance and softens through the change.
-    tl.to(
-      inner(smls[i - 1]),
-      {
-        yPercent: -SML_TRAVEL,
-        opacity: 0,
-        filter: SML_BLUR,
-        duration: swap * 0.75,
-        ease: 'power2.in',
-      },
-      at
-    );
-    tl.fromTo(
-      inner(smls[i]),
-      { yPercent: SML_TRAVEL, opacity: 0, filter: SML_BLUR },
-      {
-        yPercent: 0,
-        opacity: 1,
-        filter: BLUR_OUT,
-        duration: swap * 0.85,
-        ease: 'power2.out',
-        immediateRender: false,
-      },
-      at + swap * 0.25
-    );
-
-    // Of the text, only the word moves.
-    tl.to(
-      inner(words[i - 1]),
-      { yPercent: -100, duration: swap * 0.8, ease: 'power2.inOut' },
-      at + swap * 0.1
-    );
-    tl.to(
-      inner(words[i]),
-      { yPercent: 0, duration: swap * 0.8, ease: 'power2.inOut' },
-      at + swap * 0.1
-    );
-
-    // Body crossfades, since only its bold prefix differs.
-    tl.to(bodies[i - 1], { opacity: 0, duration: swap * 0.5 }, at + swap * 0.1);
-    tl.to(bodies[i], { opacity: 1, duration: swap * 0.5 }, at + swap * 0.5);
-  }
-
-  // Explicit trailing spacer so the last pillar's hold keeps its length.
-  tl.to({}, { duration: S5_PILLAR }, STAGE4_END + S5_ENTRY + S5_PILLAR * 3);
+  tl.to({}, { duration: S5_HOLD }, entry + S5_ENTRY);
 }
 
 /* ------------------------- Stage 6 — Our Artisans, horizontal scroll -- */

@@ -830,282 +830,217 @@ html.lenis body {
   }
 }
 
-/* --------------------------------- Stage 5 — sustainability pillars -- */
+/* ------------------------------ Stage 5 — Be Responsible pillars -- */
 /*
- * Four full-screen panels stacked in place, each carrying its own background
- * colour. Transitions are a swipe: the incoming panel's clip-path opens from
- * the right edge across the outgoing one. Geometry follows Figma 631:17757.
+ * Frames 8-1..8-4 on a 1920x920 canvas: positions are % of the frame, type in
+ * --fu. Text boxes are cap-trimmed so each top matches Figma's cap line.
  */
 .pillars {
   position: absolute;
   inset: 0;
   z-index: 11; /* above the Stage 4 tablet and chapter panel */
-}
-
-.pillars__bgs,
-.pillars__lgs,
-.pillars__smls,
-.pillars__words,
-.pillars__bodies {
-  position: absolute;
-  inset: 0;
-}
-
-.pillars__bgs { z-index: 1; }
-.pillars__lgs { z-index: 3; }
-.pillars__smls { z-index: 4; }
-.pillars__words { z-index: 5; }
-.pillars__bodies { z-index: 6; }
-
-/*
- * Colour and photo both wipe on the same 110deg diagonal. A hard-stop
- * gradient mask gives the angled edge that clip-path insets cannot; --wipe
- * runs 0% -> 100% and GSAP tweens it directly.
- */
-.pillar-bg,
-.pillar-lg,
-.pillar-sml {
-  --wipe: 0%;
-  -webkit-mask-image: linear-gradient(
-    110deg,
-    #000 var(--wipe),
-    transparent var(--wipe)
-  );
-  mask-image: linear-gradient(
-    110deg,
-    #000 var(--wipe),
-    transparent var(--wipe)
-  );
-  will-change: mask-image;
-}
-
-.pillar-bg {
-  position: absolute;
-  inset: 0;
-}
-
-/* Left photo — crossfades between pillars, so it never translates. */
-.pillar-lg {
-  position: absolute;
-  left: calc(-0.2604 * var(--u)); /* -5px @ 1920 */
-  top: 0;
-  width: calc(61.276 * var(--u)); /* 1176.5px @ 1920 */
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  will-change: mask-image, opacity;
-}
-
-/*
- * Small photo — clips to its own frame so the swipe travels the height of the
- * photo rather than the whole viewport, which read far too hard.
- */
-.pillar-sml {
-  position: absolute;
-  left: calc(76.5625 * var(--u)); /* 1470px @ 1920 */
-  top: calc(4.0625 * var(--u)); /* 78px @ 1920 */
-  width: calc(19.8958 * var(--u)); /* 382px @ 1920 */
-  height: calc(21.7708 * var(--u)); /* 418px @ 1920 */
   overflow: hidden;
-  will-change: mask-image;
-}
-
-.pillar-sml img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  will-change: transform, opacity, filter;
-}
-
-/* Pillar word — swipes vertically inside its own clipped box. */
-.pillar-word {
-  position: absolute;
-  left: calc(58.5938 * var(--u)); /* 1125px @ 1920 */
-  top: calc(30.1563 * var(--u)); /* 579px @ 1920 */
-  display: inline-block;
-  overflow: hidden;
-  font-family: var(--font-sans);
-  font-style: italic;
-  font-weight: 400;
-  font-size: clamp(38px, calc(4.1463 * var(--u)), 79.608px); /* 79.608px @ 1920 */
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  color: #fff;
-  white-space: nowrap;
-}
-
-.pillar-word > span {
-  display: block;
-  will-change: transform;
-}
-
-/* Body copy — crossfades; only its bold prefix differs per pillar. */
-.pillar-body {
-  position: absolute;
-  left: calc(61.9271 * var(--u)); /* 1189px @ 1920 */
-  top: calc(38.1771 * var(--u)); /* 733px @ 1920 */
-  width: calc(26.0938 * var(--u)); /* 501px @ 1920 */
-  font-family: var(--font-sans);
-  font-weight: 500;
-  font-size: var(--fs-body);
-  line-height: 1.3251;
-  letter-spacing: -0.02em;
-  color: #fff;
-  opacity: 0;
-  will-change: opacity;
-}
-
-.pillar-body strong {
-  font-weight: 800;
-}
-
-/* Shared, static across all four pillars. */
-.pillars__be {
-  position: absolute;
-  left: calc(34.7396 * var(--u)); /* 667px @ 1920 */
-  top: calc(25.625 * var(--u)); /* 492px @ 1920 */
-  width: calc(24.2188 * var(--u)); /* 465px @ 1920 */
-  height: calc(13.0729 * var(--u)); /* 251px @ 1920 */
-  z-index: 7;
-  opacity: 0;
-  will-change: opacity, filter;
-}
-
-/*
- * The B from Stage 4, expanded. Its box IS the glyph's ink box in the design
- * (Figma 631:17802: -29,-576 at 2674x3838), and the mask is sized so B.svg's
- * ink (2948,4321 / 1318x1891 in a 7460x8854 box) lands exactly on it.
- * transform-origin 0 0 lets Stage 5's entry scale it up from the Stage 4
- * watermark's on-screen position without re-deriving the geometry.
- */
-.pillars__shape {
-  position: absolute;
-  left: calc(-1.5104 * var(--u)); /* -29px @ 1920 */
-  top: calc(-30 * var(--u)); /* -576px @ 1920 */
-  width: calc(139.2708 * var(--u)); /* 2674px @ 1920 */
-  height: calc(199.8958 * var(--u)); /* 3838px @ 1920 */
-  z-index: 2;
-  background: var(--cream);
-  opacity: 0;
-  transform-origin: 0 0;
-  -webkit-mask-image: url('/assets/B.svg');
-  mask-image: url('/assets/B.svg');
-  -webkit-mask-size: calc(788.28 * var(--u)) calc(935.94 * var(--u));
-  mask-size: calc(788.28 * var(--u)) calc(935.94 * var(--u));
-  -webkit-mask-position: calc(-311.51 * var(--u)) calc(-456.77 * var(--u));
-  mask-position: calc(-311.51 * var(--u)) calc(-456.77 * var(--u));
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  will-change: transform, opacity;
-}
-
-.pillar-bg--1 { background: #a2c088; }
-.pillar-bg--2 { background: #8fb8a8; }
-.pillar-bg--3 { background: #c2a482; }
-.pillar-bg--4 { background: #7e9bb5; }
-
-
-
-
-
-
-
-.pillar__body strong {
-  font-weight: 800;
-}
-
-/* Shared across all four pillars — never moves. */
-.pillars__cta {
-  position: absolute;
-  inset: 0;
-  z-index: 8;
-  opacity: 0;
-  pointer-events: none;
-  will-change: opacity, filter;
-}
-
-.pillars__cta > * {
+  visibility: hidden;
   pointer-events: auto;
 }
 
-.btn-white {
+.pillars__media {
   position: absolute;
-  left: calc(61.875 * var(--u)); /* 1188px @ 1920 */
-  top: calc(46.0938 * var(--u)); /* 885px @ 1920 */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  color: var(--ink);
-  border-radius: 3.855px;
-  padding: 1.285em 1.9275em; /* 19.275px / 28.912px against 15px */
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.pillars__imgs {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.pillars__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+}
+
+.pillars__img:first-child {
+  opacity: 1;
+}
+
+/* Constant for legibility — never changes per pillar. */
+.pillars__gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(22, 22, 22, 0) 22.935%, rgba(22, 22, 22, 0.9) 102.61%);
+}
+
+.pillars__defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Frame 8-1: the B bleeding in from the left (-953,-889 1542x2213). */
+.pillars__bigb-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.pillars__bigb {
+  position: absolute;
+  left: -49.6354%;
+  top: -96.6304%;
+  width: 80.3125%;
+  height: auto;
+  aspect-ratio: 1318 / 1891;
+  fill: #faf9f8;
+}
+
+/* Frames 8-2..8-4: two white Bs peeking up from the bottom edge. */
+.pillars__shape {
+  position: absolute;
+  top: 100%;
+  z-index: 2;
+  height: auto;
+  aspect-ratio: 1318 / 1891;
+  fill: #fff;
+  pointer-events: none;
+}
+
+.pillars__shape--sm {
+  width: 38.9063%; /* 747px */
+}
+
+.pillars__shape--lg {
+  width: 94.0104%; /* 1805px */
+}
+
+.pillars__intro {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.pillars__head {
+  position: absolute;
+  inset: 0;
+}
+
+.pillars__title,
+.pillars__slogan,
+.pillar__label,
+.pillar__title,
+.pillar__slogan {
+  position: absolute;
+  margin: 0;
+  transform: translateX(-50%);
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: var(--fs-ui);
-  line-height: 1.542;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background-color 0.3s ease;
-}
-
-.btn-white:hover {
-  background: #f0efe9;
-}
-
-.pillars__more {
-  position: absolute;
-  left: calc(78.1156 * var(--u)); /* 1499.82px @ 1920 */
-  top: calc(46.6958 * var(--u)); /* 896.56px @ 1920 */
-  display: inline-flex;
-  align-items: center;
-  gap: 1.028em; /* 15.42px against 15px */
-  padding-bottom: 1.028em;
-  border-bottom: 0.964px solid #fff;
   color: #fff;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: var(--fs-ui);
-  line-height: 1.542;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
-  text-decoration: none;
+  text-align: center;
   white-space: nowrap;
+  text-box: trim-both cap alphabetic;
 }
 
-.pillars__more .icon--arrow {
-  width: 1.349em; /* 20.238px against 15px */
-  transition: transform 0.3s ease;
+.pillars__title {
+  left: 50%;
+  top: 42.5%;
+  font-weight: 600;
+  font-size: clamp(36px, calc(3.9063 * var(--fu)), 75px);
+  line-height: 1.1333;
+  letter-spacing: -0.03em;
 }
 
-.pillars__more:hover .icon--arrow {
-  transform: translateX(0.25em);
+.pillars__slogan {
+  left: 50%;
+  top: 55.22%;
+  font-weight: 500;
+  font-size: clamp(16px, calc(1.5625 * var(--fu)), 30px);
+  line-height: 1.964;
+  letter-spacing: -0.03em;
+}
+
+/* One layer per pillar; the scroll entry only animates its opacity/top. */
+.pillar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Label centre (8-1) and expanded-block centre (8-2..8-4), from the frames. */
+.pillar--conscious { --label-x: 17.6302%; --x: 19.1406%; }
+.pillar--caring { --label-x: 50%; --x: 50%; }
+.pillar--engaged { --label-x: 82.0833%; --x: 82.0833%; }
+
+.pillar__label {
+  left: var(--label-x);
+  top: 83.48%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 500;
+  font-size: clamp(28px, calc(3.125 * var(--fu)), 60px);
+  line-height: 1.4167;
+  letter-spacing: -0.03em;
+  opacity: 0.2;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* 8-1: where the label crosses the cream B it reads as black at 20%. */
+.pillars.is-default .pillar__label {
+  mix-blend-mode: difference;
+}
+
+.pillar__detail {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.pillar__title {
+  left: var(--x);
+  top: 66.74%;
+  font-weight: 600;
+  font-size: clamp(28px, calc(3.125 * var(--fu)), 60px);
+  line-height: 1.4167;
+  letter-spacing: -0.03em;
+}
+
+.pillar__slogan {
+  left: var(--x);
+  top: 74.89%;
+  font-weight: 500;
+  font-size: clamp(12px, calc(0.8333 * var(--fu)), 16px);
+  line-height: 1.325;
+  letter-spacing: -0.02em;
+}
+
+.pillar__cta {
+  position: absolute;
+  left: var(--x);
+  top: 81.96%;
+  transform: translateX(-50%);
+  pointer-events: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pillar-bg,
-  .pillar-lg,
-  .pillar-sml {
-    --wipe: 100%;
-  }
-
-  .pillar-lg:last-of-type {
-    opacity: 1;
-  }
-
-  .pillar-body:last-of-type,
-  .pillars__be {
-    opacity: 1;
-  }
-
-  .pillars__shape {
-    opacity: 1;
-  }
-
-
-  .pillars__cta {
-    opacity: 1;
+  .pillars {
+    visibility: visible;
   }
 }
 
@@ -1902,30 +1837,6 @@ html.lenis body {
     margin-left: 0;
   }
 
-  /* --- Stage 5: pillars --- */
-  .pillar-word {
-    left: 52vw;
-    top: 34vw;
-  }
-
-  .pillar-body {
-    left: 52vw;
-    top: 44vw;
-    width: 40vw;
-  }
-
-  .pillars__be {
-    left: 26vw;
-    top: 27vw;
-    width: 22vw;
-    height: 11.87vw;
-  }
-
-  .pillars__cta {
-    left: 52vw;
-    top: 58vw;
-  }
-
   /* --- Stage 8: footer --- */
   .footer__colgroup--1 { left: 34vw; width: 20vw; }
   .footer__colgroup--2 { left: 56vw; width: 20vw; }
@@ -2032,43 +1943,6 @@ html.lenis body {
   .prow {
     height: auto;
     padding: 3.5vw 0;
-  }
-
-  /* --- Stage 5: pillars --- */
-  .pillar-lg {
-    left: 0;
-    width: 100%;
-  }
-
-  .pillar-sml {
-    display: none; /* no room for the inset photo at this width */
-  }
-
-  .pillars__be {
-    left: 7vw;
-    top: 46vw;
-    width: 34vw;
-    height: 18.35vw;
-  }
-
-  .pillar-word {
-    left: 7vw;
-    top: 66vw;
-    font-size: clamp(30px, 9vw, 56px);
-  }
-
-  .pillar-body {
-    left: 7vw;
-    top: 84vw;
-    width: 86vw;
-  }
-
-  .pillars__cta {
-    left: 7vw;
-    top: 118vw;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5vw;
   }
 
   /* --- Stage 6: artisans --- */
