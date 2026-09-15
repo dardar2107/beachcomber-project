@@ -443,7 +443,7 @@ html.lenis body {
 .figures__panel {
   position: absolute;
   left: calc(6.1979 * var(--fu));
-  top: calc(6.6667 * var(--fu));
+  top: calc(6.1979 * var(--fu)); /* 119: puts the title's cap line on 128 */
   width: calc(36.8229 * var(--fu));
   z-index: 99;
   pointer-events: auto;
@@ -471,7 +471,7 @@ html.lenis body {
 /* Stats stack in one box and swap in place. */
 .figures__stats {
   position: relative;
-  margin-top: calc(5.2083 * var(--fu));
+  margin-top: calc(5.0000 * var(--fu));
   height: calc(12.8646 * var(--fu));
 }
 
@@ -493,7 +493,7 @@ html.lenis body {
   display: flex;
   align-items: baseline;
   gap: calc(0.3125 * var(--fu));
-  margin-top: calc(3.2292 * var(--fu));
+  margin-top: calc(3.6458 * var(--fu));
   white-space: nowrap;
   color: var(--stone);
 }
@@ -534,7 +534,7 @@ html.lenis body {
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: clamp(12px, calc(0.7812 * var(--fu)), 15px);
-  line-height: 1.6;
+  line-height: 1.0667; /* 16px: 56px-tall button with 20px padding */
   letter-spacing: -0.02em;
   text-transform: uppercase;
   text-decoration: none;

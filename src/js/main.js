@@ -394,17 +394,16 @@ function addHero(tl, reduceMotion) {
 
 /* --------------------------- Segments A / B / C — "2026 in figures" -- */
 
-/*
- * Frame 2-1 dock rect: 897x878 at 1003,21 on a 1920x920 canvas — kept 20px off
- * the right edge and 21px off top and bottom at any viewport.
- */
+// Frame 2-1 dock rect (897x878 at 1003,21 on 1920x920), scaled per axis.
 function dockRect() {
   const W = window.innerWidth;
   const H = window.innerHeight;
-  const k = Math.min(W / 1920, H / 920);
-  const width = 897 * k;
-  const height = Math.min(H - 42 * k, width * (878 / 897));
-  return { left: W - 20 * k - width, top: (H - height) / 2, width, height };
+  return {
+    left: (1003 / 1920) * W,
+    top: (21 / 920) * H,
+    width: (897 / 1920) * W,
+    height: (878 / 920) * H,
+  };
 }
 
 const DOCK_EASE = gsap.parseEase('power2.inOut');
@@ -450,7 +449,6 @@ function addDock(hero, figures, staticDock) {
     window.addEventListener('resize', () => place(1));
     gsap.set(shade, { opacity: 0 });
     gsap.set(crop, { opacity: 1 });
-    gsap.set(dockVideo, { scale: 1.1 });
     gsap.set(reveals, { opacity: 1, y: 0, filter: BLUR_OUT });
     return;
   }
@@ -481,8 +479,6 @@ function addDock(hero, figures, staticDock) {
 
   tl.fromTo(hero, { opacity: 1 }, { opacity: 0, duration: 0.3 }, 0);
   tl.fromTo(shade, { opacity: 1 }, { opacity: 0, duration: 0.5 }, 0.1);
-  // Pre-scales for Part B's pan headroom, matching the hero's framing at 0.
-  tl.fromTo(dockVideo, { scale: 1 }, { scale: 1.1, duration: 1 }, 0);
   tl.fromTo(crop, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power1.in' }, 0.6);
   tl.fromTo(
     reveals,
@@ -494,17 +490,29 @@ function addDock(hero, figures, staticDock) {
 
 /* --- Part B: pinned stat cycle (original clock 4.4 -> 6.8) --- */
 
-// xPercent / yPercent of the 1.1x video behind the fixed crop, per stat.
-const DOCK_PAN = [
-  [0, 0],
-  [-3, 2],
-  [2.5, -2],
+/*
+ * B.svg glyph placement inside the 897x878 dock per stat — frames 2-1, 3-1,
+ * 4-1 (vector at 599,-907 1314x1885 / 599,-725 1314x1885 / 373,-343 1766x2533,
+ * minus the dock origin 1003,21). The glyph's ink box in B.svg is
+ * 2948,4321 1318x1891, so s = w / 1318, t = rect - ink * s.
+ */
+const B_INK = { x: 2948, y: 4321, w: 1318 };
+const cropTransform = (x, y, w) => {
+  const s = w / B_INK.w;
+  return `translate(${(x - 1003 - B_INK.x * s).toFixed(2)} ${(y - 21 - B_INK.y * s).toFixed(2)}) scale(${s.toFixed(6)})`;
+};
+const CROP_PER_STAT = [
+  cropTransform(599, -907, 1314),
+  cropTransform(599, -725, 1314),
+  cropTransform(373, -343, 1766),
 ];
 
 function addFigures(tl, reduceMotion) {
   const scope = document.querySelector('[data-figures]');
   const stats = scope.querySelectorAll('[data-figures-stat]');
-  const dockVideo = scope.querySelector('[data-figures-dockvideo]');
+  const cropPath = scope.querySelector('[data-figures-crop-path]');
+
+  gsap.set(cropPath, { attr: { transform: CROP_PER_STAT[0] } });
 
   gsap.set([...stats].slice(1), { opacity: 0, y: 50, filter: BLUR_IN });
   if (reduceMotion) return;
@@ -524,10 +532,10 @@ function addFigures(tl, reduceMotion) {
       at + SEG_C * 0.2
     );
 
-    // Quieter, offset and longer than the text swap — the view drifts.
+    // Offset and longer than the text swap, so the crop reads as a secondary move.
     tl.to(
-      dockVideo,
-      { xPercent: DOCK_PAN[i][0], yPercent: DOCK_PAN[i][1], duration: SEG_C * 0.95, ease: 'sine.inOut' },
+      cropPath,
+      { attr: { transform: CROP_PER_STAT[i] }, duration: SEG_C * 0.95, ease: 'sine.inOut' },
       at + 0.12
     );
   }
