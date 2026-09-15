@@ -1400,12 +1400,15 @@ function initFooter() {
 
   gsap.set(pieces, { opacity: 0, y: 34, filter: BLUR_IN });
 
-  // Not pinned — this only tracks the footer's approach up the viewport.
+  // Not pinned — this only tracks the footer's approach up the viewport. It ends
+  // when the footer's bottom meets the viewport's (the end of the page): the
+  // footer is shorter than the viewport, so its top never reaches 'top top' and
+  // the reveal used to stall half-blurred.
   const tl = gsap.timeline({
     scrollTrigger: {
       trigger: footer,
       start: 'top bottom',
-      end: 'top top',
+      end: 'bottom bottom',
       scrub: 0.6,
       invalidateOnRefresh: true,
       markers: MARKERS,
