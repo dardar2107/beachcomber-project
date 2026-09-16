@@ -1964,6 +1964,132 @@ html.lenis body {
   }
 }
 
+/* ------------------------------------------------------- Main menu -- */
+/*
+ * Frame 1030:1680: a 406px panel on #faf9f8 over the page, which is blurred
+ * and darkened behind it. Sizes follow the 1920 canvas in vw with px floors.
+ */
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+}
+
+.menu[hidden] {
+  display: none;
+}
+
+.menu__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  cursor: pointer;
+}
+
+.menu__panel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: max(300px, 21.1458vw); /* 406px @ 1920 */
+  padding: max(56px, 4.0104vw) max(24px, 2vw) max(40px, 3vw) max(40px, 6.25vw); /* 77 / 120 @ 1920 */
+  background: #faf9f8;
+  display: flex;
+  flex-direction: column;
+  gap: max(56px, 5vw); /* 96 @ 1920 */
+  overflow-y: auto;
+  will-change: transform;
+}
+
+.menu__close,
+.menu__link {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(14px, 0.9375vw, 18px); /* 18px @ 1920 */
+  line-height: 1.2;
+  letter-spacing: 0.1667em; /* 3px @ 18px */
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.menu__close {
+  display: inline-flex;
+  align-items: center;
+  gap: 1em; /* 18px @ 18px */
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.menu__close:hover {
+  opacity: 0.6;
+}
+
+/* The two 16x2 bars of the frame's close icon. */
+.menu__x {
+  position: relative;
+  width: 0.7071em;
+  height: 0.7071em;
+  flex: 0 0 auto;
+}
+
+.menu__x::before,
+.menu__x::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.8889em; /* 16px @ 18px */
+  height: 2px;
+  background: var(--ink);
+}
+
+.menu__x::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.menu__x::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.menu__links {
+  display: flex;
+  flex-direction: column;
+  gap: max(48px, 4.6875vw); /* 90 @ 1920 */
+}
+
+.menu__group {
+  display: flex;
+  flex-direction: column;
+  gap: max(26px, 2.3438vw); /* 45 @ 1920 */
+}
+
+.menu__group + .menu__group {
+  gap: max(16px, 1.1979vw); /* 23 @ 1920 */
+}
+
+.menu__link {
+  transition: color 0.3s ease;
+}
+
+.menu__link:hover {
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu__backdrop {
+    opacity: 1;
+  }
+}
+
 /* ------------------------------------- Back-to-top navy curtain -- */
 
 .curtain {

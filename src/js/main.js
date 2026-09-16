@@ -17,6 +17,9 @@ gsap.registerPlugin(ScrollTrigger);
 // so gestures inside its stepped range move one stop instead of scrolling.
 let scrollInputGate = () => true;
 
+// The menu swallows scroll input outright while it is open.
+let menuIsOpen = false;
+
 const lenis = new Lenis({
   autoRaf: false,
   lerp: 0.07,
@@ -197,6 +200,7 @@ function initFigureSteps(trigger) {
   };
 
   scrollInputGate = ({ deltaY }) => {
+    if (menuIsOpen) return false;
     if (!deltaY) return true;
     const now = performance.now();
     const fresh = now - lastInput > STEP_GESTURE_GAP;
@@ -867,9 +871,95 @@ function addAchievements(tl, reduceMotion) {
   /* --- Segment D: 9100 -> 9600. Nothing scheduled; Stage 4 picks up at 9600. --- */
 }
 
+/* ------------------------------------------------------- Main menu -- */
+
+/*
+ * Frame 1030:1680. The panel slides in from the left over a blurred, darkened
+ * page; the page itself stops scrolling while it is open. Closes on the X, the
+ * backdrop, or Escape, and hands focus back to the button that opened it.
+ */
+function initMenu() {
+  const root = document.querySelector('[data-menu]');
+  const opener = document.querySelector('[data-menu-open]');
+  if (!root || !opener) return;
+
+  const panel = root.querySelector('.menu__panel');
+  const backdrop = root.querySelector('[data-menu-backdrop]');
+  const closer = root.querySelector('[data-menu-close]');
+  const links = root.querySelectorAll('[data-menu-link]');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const D = reduceMotion ? 0 : 1;
+
+  let tl = null;
+
+  const open = () => {
+    if (menuIsOpen) return;
+    menuIsOpen = true;
+    root.hidden = false;
+    opener.setAttribute('aria-expanded', 'true');
+    lenis.stop();
+
+    tl?.kill();
+    tl = gsap.timeline();
+    tl.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.35 * D, ease: 'power2.out' }, 0);
+    tl.fromTo(panel, { xPercent: -100 }, { xPercent: 0, duration: 0.45 * D, ease: 'power3.out' }, 0);
+    tl.fromTo(
+      [closer, ...links],
+      { opacity: 0, x: -12 },
+      { opacity: 1, x: 0, duration: 0.3 * D, stagger: 0.04 * D, ease: 'power2.out' },
+      0.15 * D
+    );
+    closer.focus({ preventScroll: true });
+  };
+
+  const close = ({ restoreFocus = true } = {}) => {
+    if (!menuIsOpen) return;
+    menuIsOpen = false;
+    opener.setAttribute('aria-expanded', 'false');
+
+    tl?.kill();
+    tl = gsap.timeline({
+      onComplete: () => {
+        root.hidden = true;
+        lenis.start();
+        if (restoreFocus) opener.focus({ preventScroll: true });
+      },
+    });
+    tl.to(panel, { xPercent: -100, duration: 0.35 * D, ease: 'power3.in' }, 0);
+    tl.to(backdrop, { opacity: 0, duration: 0.3 * D, ease: 'power2.in' }, 0.05 * D);
+  };
+
+  opener.addEventListener('click', open);
+  closer.addEventListener('click', () => close());
+  backdrop.addEventListener('click', () => close());
+  links.forEach((a) => a.addEventListener('click', () => close({ restoreFocus: false })));
+
+  document.addEventListener('keydown', (e) => {
+    if (!menuIsOpen) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+      return;
+    }
+    // Keep tabbing inside the panel while it is open.
+    if (e.key !== 'Tab') return;
+    const focusable = [closer, ...links];
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+}
+
 initScene();
 initNews();
 initFooter();
+initMenu();
 
 // Web fonts change measured heights — re-measure once they land.
 if (document.fonts && document.fonts.ready) {

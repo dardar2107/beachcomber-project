@@ -39,7 +39,7 @@
 
         <header class="hero__nav" data-hero-nav>
           <div class="hero__nav-side hero__nav-side--left">
-            <button class="nav-btn" type="button" aria-label="Open menu">
+            <button class="nav-btn" type="button" data-menu-open aria-label="Open menu" aria-expanded="false" aria-controls="main-menu">
               <span class="nav-btn__label">Menu</span>
               <svg class="icon icon--menu" viewBox="0 0 24 14" aria-hidden="true">
                 <path d="M0 1h24M0 7h24M0 13h16" />
@@ -528,6 +528,32 @@
         </ul>
         <p class="footer__legal footer__legal--site" data-fx>Site by <strong>FRCI Ltd.</strong></p>
       </footer>
+
+      <!-- Main menu (frame 1030:1680): panel over a blurred, darkened page. -->
+      <div class="menu" data-menu hidden>
+        <div class="menu__backdrop" data-menu-backdrop></div>
+
+        <nav class="menu__panel" id="main-menu" role="dialog" aria-modal="true" aria-label="Main menu">
+          <button class="menu__close" type="button" data-menu-close>
+            <span class="menu__x" aria-hidden="true"></span>
+            <span>Close</span>
+          </button>
+
+          <div class="menu__links">
+            <div class="menu__group">
+              <a class="menu__link" data-menu-link href="#group">Group</a>
+              <a class="menu__link" data-menu-link href="#investors">Investors</a>
+              <a class="menu__link" data-menu-link href="#artisans">Artisans</a>
+            </div>
+            <div class="menu__group">
+              <a class="menu__link" data-menu-link href="#newsroom">Newsroom</a>
+              <a class="menu__link" data-menu-link href="#career">Career</a>
+              <a class="menu__link" data-menu-link href="#hotels">Hotels</a>
+              <a class="menu__link" data-menu-link href="#contact">Contact</a>
+            </div>
+          </div>
+        </nav>
+      </div>
 
       <!-- Navy curtain for the back-to-top transition. -->
       <div class="curtain" data-curtain aria-hidden="true"></div>
