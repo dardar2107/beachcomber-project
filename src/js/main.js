@@ -1489,7 +1489,6 @@ function initFooter() {
   const footer = document.querySelector('[data-footer]');
   if (!footer) return;
 
-  const panel = footer.querySelector('[data-footer-panel]');
   const top = footer.querySelector('[data-footer-top]');
 
   // Reveal in document order: newsletter, navigation, badge, back to top, legal row.
@@ -1544,17 +1543,15 @@ function initFooter() {
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduceMotion) {
-    gsap.set(panel, { clipPath: 'inset(0% 0% 0% 0%)' });
     gsap.set(pieces, { opacity: 1, y: 0 });
     return;
   }
 
   gsap.set(pieces, { opacity: 0, y: 34, filter: BLUR_IN });
 
-  // Not pinned — this only tracks the footer's approach up the viewport. It ends
-  // when the footer's bottom meets the viewport's (the end of the page): the
-  // footer is shorter than the viewport, so its top never reaches 'top top' and
-  // the reveal used to stall half-blurred.
+  // Not pinned — the footer scrolls in with the page; this only fades its
+  // contents in as it arrives. It ends when the footer's bottom meets the
+  // viewport's (the end of the page), which the footer always reaches.
   const tl = gsap.timeline({
     scrollTrigger: {
       trigger: footer,
@@ -1566,25 +1563,17 @@ function initFooter() {
     },
   });
 
-  // Charcoal curtain wipes up over the news slider.
-  tl.fromTo(
-    panel,
-    { clipPath: 'inset(100% 0% 0% 0%)' },
-    { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.7, ease: 'power2.inOut' },
-    0
-  );
-
-  // Contents follow once the wipe is about 70% through.
+  // A gentle stagger as the footer comes into view.
   tl.to(
     pieces,
     {
       opacity: 1,
       y: 0,
       filter: BLUR_OUT,
-      duration: 0.22,
-      stagger: 0.06,
+      duration: 0.3,
+      stagger: 0.05,
       ease: 'power2.out',
     },
-    0.49
+    0.1
   );
 }

@@ -1365,12 +1365,10 @@ html.lenis body {
 /* ------------------------------------------- Stage 7 — news slider -- */
 /*
  * Frame 10-1, top part (1920 wide, 1071 tall on a #f4f2ea ground). Normal
- * flow; sticks while the footer rides up over it. 470px cards, 24px gaps.
+ * flow — it scrolls away and the footer follows it. 470px cards, 24px gaps.
  */
 .news {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  position: relative;
   background: var(--cream);
   color: #424242;
   padding: 7.1354vw 0 8.1771vw;
@@ -1595,7 +1593,6 @@ html.lenis body {
  */
 .footer {
   position: relative;
-  z-index: 2; /* rides over the sticky news section */
   height: 28.7500vw;
   min-height: 460px;
   overflow: hidden;
@@ -1607,8 +1604,6 @@ html.lenis body {
   position: absolute;
   inset: 0;
   background: var(--ink);
-  clip-path: inset(100% 0% 0% 0%);
-  will-change: clip-path;
 }
 
 .footer [data-fx] {
@@ -1964,10 +1959,6 @@ html.lenis body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .footer__panel {
-    clip-path: inset(0% 0% 0% 0%);
-  }
-
   .footer [data-fx] {
     opacity: 1;
   }
