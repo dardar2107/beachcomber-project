@@ -209,6 +209,41 @@ html.lenis body {
   width: 1.35em;
 }
 
+/* --- Scroll cue (frame 1-1) --- */
+/* Line 752-816, label's cap line at 862 on the 921 canvas. */
+
+.hero__scroll {
+  position: absolute;
+  left: 0;
+  bottom: 5.2118%; /* label bottom at 873 of 921 */
+  width: 100%;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.3958vw; /* 46px @ 1920 — the cue is measured on the 1920-wide frame */
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.hero__scroll-line {
+  width: 1px;
+  height: 3.3333vw; /* 64px @ 1920 */
+  background: rgba(255, 255, 255, 1);
+}
+
+.hero__scroll-label {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(11px, 0.8333vw, 16px); /* 16px @ 1920 */
+  line-height: 1;
+  letter-spacing: 0.2em; /* 3.2px @ 16px */
+  text-transform: uppercase;
+  color: #fff;
+  text-box: trim-both cap alphabetic;
+}
+
 /* --- Content --- */
 /* Rest position measured from frame 1-5's content group: left 116px,
    effective top 423.31px (508.31px container - 85px inner offset). */

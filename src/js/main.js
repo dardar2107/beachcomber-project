@@ -393,6 +393,7 @@ function addHero(tl, reduceMotion) {
   const shade = hero.querySelector('[data-hero-shade]');
   const video = hero.querySelector('.hero__video');
   const nav = hero.querySelector('[data-hero-nav]');
+  const scrollCue = hero.querySelector('[data-hero-scroll]');
   const navLogo = hero.querySelector('[data-hero-nav-logo]');
   const content = hero.querySelector('[data-hero-content]');
   const ctas = hero.querySelectorAll('[data-hero-cta]');
@@ -409,6 +410,7 @@ function addHero(tl, reduceMotion) {
   }
 
   if (reduceMotion) {
+    gsap.set(scrollCue, { opacity: 1 });
     gsap.set(canvas, { autoAlpha: 0 });
     gsap.set([shade, navLogo], { opacity: 1 });
     gsap.set(nav, { top: navEndTop + '%', opacity: 1 });
@@ -503,6 +505,25 @@ function addHero(tl, reduceMotion) {
   });
 
   gsap.set([shade, navLogo], { opacity: 0 });
+
+  // Cue arrives after the logo has settled, and leaves as soon as Stage 1 moves.
+  gsap.fromTo(
+    scrollCue,
+    { opacity: 0 },
+    { opacity: 1, duration: 0.6, delay: 1.2, ease: 'power2.out' }
+  );
+  /*
+   * Tied to the scroll position rather than the scrubbed timeline (the hero is
+   * pinned, so a ScrollTrigger on it never advances), so the cue leaves on the
+   * first movement and returns whenever the reader is back at the very top.
+   */
+  let cueShown = true;
+  lenis.on('scroll', ({ scroll }) => {
+    const show = scroll < 40;
+    if (show === cueShown) return;
+    cueShown = show;
+    gsap.to(scrollCue, { opacity: show ? 1 : 0, duration: 0.25, overwrite: 'auto' });
+  });
 
   /* 1-1 -> 1-2: wordmark fades + drops; mark recentres and grows, white. */
   tl.to(state, { m: 1, duration: 0.5 }, 0);
