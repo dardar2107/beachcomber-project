@@ -227,10 +227,43 @@ html.lenis body {
   will-change: opacity;
 }
 
+/* A short bright segment travels down the rule, on a slow loop. */
 .hero__scroll-line {
+  position: relative;
   width: 1px;
   height: 3.3333vw; /* 64px @ 1920 */
-  background: rgba(255, 255, 255, 1);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.hero__scroll-line::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 45%;
+  background: #fff;
+  animation: hero-scroll-cue 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes hero-scroll-cue {
+  0% {
+    top: -45%;
+    opacity: 0;
+  }
+
+  25% {
+    opacity: 1;
+  }
+
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
 }
 
 .hero__scroll-label {
@@ -339,6 +372,15 @@ html.lenis body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hero__scroll-line {
+    background: #fff;
+  }
+
+  .hero__scroll-line::after {
+    animation: none;
+    opacity: 0;
+  }
+
   .hero__canvas {
     display: none;
   }
